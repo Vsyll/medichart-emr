@@ -304,11 +304,15 @@ Implementasi MediChart EMR v2 dilakukan secara inkremental dalam satu file `medi
     - Buat file `docs/makalah.md` dengan gaya laporan akademik yang lebih deskriptif dari `docs/laporan.md`
     - Cakup konteks proyek secara keseluruhan (analisis, desain, implementasi, validasi, pembahasan, kesimpulan)
     - _Requirements: 15.8_
-
   - [x] 15.6 Buat presentasi LaTeX Beamer
     - Buat file `docs/presentation.tex` sebagai sumber slide presentasi (Beamer)
     - Sertakan slide untuk Pendahuluan, Deskripsi Sistem, Arsitektur, Desain Data, Keamanan, Diagnostic Reports, Diagram, Implementasi & Validasi, Kesimpulan
     - _Requirements: 15b.1, 15b.2, 15b.3_
+
+  - [x] 15.7 Buat file LaTeX makalah (makalah.tex) terpisah dari laporan.tex
+    - Buat file `docs/makalah.tex` yang merupakan naskah akademik siap dikompilasi dan berbeda secara struktural dari `docs/laporan.tex`
+    - Pastikan makalah.tex mencakup abstrak, pendahuluan, arsitektur, model data, implementasi, validasi, pembahasan, kesimpulan, dan lampiran instruksi diagram
+    - _Requirements: 15.8, 15.6_
 
 - [x] 16. Verifikasi akhir dan polish
   - [x] 16.1 Verifikasi konsistensi visual dan responsivitas
