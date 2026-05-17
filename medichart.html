@@ -854,8 +854,11 @@ body {
     <div id="l-err"></div>
     <div class="login-hint">
       🔐 <strong>Demo akun:</strong><br>
-      Username <code>dr.pirman</code> / password <code>tanyadew</code><br>
-      Username <code>dr.naser</code> / password <code>satria1950</code>
+      <code>dr.pirman</code> / <code>tanyadew</code> — Dokter<br>
+      <code>dr.naser</code> / <code>satria1950</code> — Dokter<br>
+      <code>perawat.sari</code> / <code>sari123</code> — Perawat<br>
+      <code>admin.budi</code> / <code>budi123</code> — Admin<br>
+      <code>dr.rina</code> / <code>rina123</code> — Dokter
     </div>
   </div>
 </div>
@@ -1032,23 +1035,6 @@ body {
    Simulasi penyimpanan data in-memory (pengganti database nyata)
 =================================================================== */
 const DB = {
-  doctors: [
-    { 
-      username:'dr.pirman', 
-      password:'tanyadew', 
-      name:'dr. Aul Pirman, S.Cmpr', 
-      initials:'AP',
-      photo:'pirman.jpg' 
-    },
-    {
-       username:'dr.naser',  
-       password:'satria1950', 
-       name:'dr. Nsr Ardy, S.Th.Ds',
-       initials:'NA',
-       photo:'naser.jpg'
-    },
-  ],
-
   patients: [
     { id:'P001', name:'Siti Rahayu',      age:34, gender:'Perempuan', address:'Jl. Mawar No. 12, Kebayoran Baru, Jakarta Selatan' },
     { id:'P002', name:'Agus Firmansyah',  age:47, gender:'Laki-laki', address:'Jl. Melati Raya No. 5, Cipete, Jakarta Selatan' },
@@ -1108,13 +1094,6 @@ const State = {
    Logika bisnis murni — tidak menyentuh DOM secara langsung
 =================================================================== */
 const Service = {
-
-  /** Otentikasi dokter; return objek dokter atau null */
-  authenticateDoctor(username, password) {
-    return DB.doctors.find(
-      d => d.username === username.trim() && d.password === password
-    ) || null;
-  },
 
   /** Cari pasien berdasarkan ID atau nama (case-insensitive substring) */
   searchPatients(query) {
@@ -1366,7 +1345,7 @@ const Service = {
 /* ------------------------------------------------------------------
    login()
    Alur: Dokter isi form → klik Masuk → login()
-         → Service.authenticateDoctor() → renderDashboard()
+         → Auth_Module.login() → renderDashboard()
 ------------------------------------------------------------------ */
 function login() {
   const username = document.getElementById('inp-usr').value;
@@ -1374,62 +1353,40 @@ function login() {
   const errEl    = document.getElementById('l-err');
   errEl.style.display = 'none';
 
-  // Coba Auth_Module.login() terlebih dahulu (mc_users / localStorage)
   const session = Auth_Module.login(username, password);
 
-  if (session) {
-    // Login via Auth_Module berhasil
-    State.doctor = { name: session.name, role: session.role, username: session.username };
-    document.getElementById('page-login').style.display = 'none';
-    document.getElementById('page-app').style.display   = 'flex';
-
-    // Update sidebar: nama dan role
-    document.getElementById('sb-name').textContent = session.name;
-    const roleEl = document.getElementById('sb-role');
-    if (roleEl) roleEl.textContent = session.role;
-
-    // Avatar: inisial nama
-    const initials = session.name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
-    const avEl = document.getElementById('sb-av');
-    // Coba foto dari DB lama jika ada
-    const legacyDoc = DB.doctors.find(d => d.username === session.username);
-    if (legacyDoc && legacyDoc.photo) {
-      avEl.innerHTML = `<img src="${legacyDoc.photo}" alt="${esc(session.name)}">`;
-    } else {
-      avEl.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;background:var(--primary-lt);color:var(--primary-dk);display:grid;place-items:center;font-size:13px;font-weight:800;">${initials}</div>`;
-    }
-
-    // Terapkan navigasi berbasis peran
-    updateNavForRole(session.role);
-
-    // Render halaman awal sesuai peran (Admin → halaman admin, lainnya → dashboard)
-    if (session.role !== 'Admin') {
-      renderDashboard();
-    }
-    return;
-  }
-
-  // Fallback: coba DB.doctors lama (untuk kompatibilitas)
-  const doctor = Service.authenticateDoctor(username, password);
-  if (!doctor) {
+  if (!session) {
     errEl.textContent   = '⚠ Username atau password salah.';
     errEl.style.display = 'block';
     return;
   }
 
-  State.doctor = doctor;
+  // Login berhasil
+  State.doctor = { name: session.name, role: session.role, username: session.username };
   document.getElementById('page-login').style.display = 'none';
   document.getElementById('page-app').style.display   = 'flex';
-  document.getElementById('sb-av').innerHTML =
-    '<img src="' + doctor.photo + '" alt="' + doctor.name + '">';
-  document.getElementById('sb-name').textContent = doctor.name;
-  const roleElFallback = document.getElementById('sb-role');
-  if (roleElFallback) roleElFallback.textContent = 'Dokter';
 
-  // Terapkan navigasi berbasis peran untuk dokter lama (selalu Dokter)
-  updateNavForRole('Dokter');
+  // Update sidebar: nama dan role
+  document.getElementById('sb-name').textContent = session.name;
+  const roleEl = document.getElementById('sb-role');
+  if (roleEl) roleEl.textContent = session.role;
 
-  renderDashboard();
+  // Avatar: foto jika ada, fallback ke inisial
+  const avEl = document.getElementById('sb-av');
+  if (session.photo) {
+    avEl.innerHTML = `<img src="${session.photo}" alt="${esc(session.name)}">`;
+  } else {
+    const initials = session.name.split(' ').filter(Boolean).slice(0, 2).map(p => p[0].toUpperCase()).join('');
+    avEl.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;background:var(--primary-lt);color:var(--primary-dk);display:grid;place-items:center;font-size:13px;font-weight:800;">${initials}</div>`;
+  }
+
+  // Terapkan navigasi berbasis peran
+  updateNavForRole(session.role);
+
+  // Render halaman awal sesuai peran (Admin → halaman admin, lainnya → dashboard)
+  if (session.role !== 'Admin') {
+    renderDashboard();
+  }
 }
 
 /* ------------------------------------------------------------------
@@ -1454,10 +1411,12 @@ function updateNavForRole(role) {
   // (karena menu klinis tersembunyi)
   if (role === 'Admin') {
     const mainEl  = document.getElementById('app-main');
+    const diagEl  = document.getElementById('page-diag-reports');
     const adminEl = document.getElementById('page-admin');
     const navDash = document.getElementById('nav-dashboard');
     const navAdm  = document.getElementById('nav-admin');
     if (mainEl)  mainEl.classList.add('hidden');
+    if (diagEl)  diagEl.classList.add('hidden');
     if (adminEl) adminEl.classList.remove('hidden');
     if (navDash) navDash.classList.remove('active');
     if (navAdm)  navAdm.classList.add('active');
@@ -2415,6 +2374,7 @@ function seedDemoUsers() {
       passwordHash: btoa('tanyadew'),
       name:         'dr. Aul Pirman, S.Cmpr',
       role:         'Dokter',
+      photo:        'assets/pirman.jpg',
       isActive:     true,
       lastLoginAt:  null,
     },
@@ -2424,6 +2384,7 @@ function seedDemoUsers() {
       passwordHash: btoa('satria1950'),
       name:         'dr. Nsr Ardy, S.Th.Ds',
       role:         'Dokter',
+      photo:        'assets/naser.jpg',
       isActive:     true,
       lastLoginAt:  null,
     },
@@ -2499,11 +2460,12 @@ const Auth_Module = {
 
     // Buat objek Session
     const session = {
-      userId:  user.userId,
+      userId:   user.userId,
       username: user.username,
-      name:    user.name,
-      role:    user.role,
-      loginAt: new Date().toISOString(),
+      name:     user.name,
+      role:     user.role,
+      photo:    user.photo || null,
+      loginAt:  new Date().toISOString(),
     };
 
     // Simpan sesi ke sessionStorage
