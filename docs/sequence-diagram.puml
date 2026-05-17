@@ -3,92 +3,133 @@ autonumber
 
 actor Dokter
 actor Perawat
-boundary "UI Dashboard" as UI
+actor Admin
+
+boundary "UI MediChart EMR" as UI
+
 control "Auth Controller" as AuthController
 control "Patient Controller" as PatientController
 control "Encounter Controller" as EncounterController
 control "DiagReport Controller" as DiagController
+control "User Controller" as UserController
+
 entity "Auth Service" as AuthService
 entity "Clinical Service" as ClinicalService
 entity "DiagReport Service" as DiagService
-database "Medical Record Database" as DB
+entity "User Service" as UserService
 
-group Login dengan RBAC
-  Dokter -> UI : Login ke sistem
-  UI -> AuthController : Kirim data login
-  AuthController -> AuthService : Validasi user
-  AuthService -> DB : Cek akun dan status aktif
-  DB --> AuthService : Data akun
-  AuthService --> AuthController : Sesi dan role
-  AuthController -> AuthService : Cek hak akses peran
-  AuthService --> AuthController : Role valid
-  AuthController --> UI : Tampilkan app shell sesuai peran
+database "Local Storage / Dummy Database" as DB
+
+group Login dan Role-Based Access
+  Dokter -> UI : Login
+  UI -> AuthController : Kirim username dan password
+  AuthController -> AuthService : Validasi akun
+  AuthService -> DB : Cek user, passwordHash, isActive
+  DB --> AuthService : Data akun dan role
+  AuthService --> AuthController : Session dan role
+  AuthController --> UI : Tampilkan menu sesuai role
 end
 
-group Lihat data pasien
+group Rekam Medis Pasien
+  Dokter -> UI : Buka halaman Rekam Medis
   UI -> PatientController : Request daftar pasien
-  PatientController -> ClinicalService : Ambil semua pasien
+  PatientController -> ClinicalService : Ambil data pasien
   ClinicalService -> DB : Query patients
   DB --> ClinicalService : Data pasien
-  ClinicalService --> PatientController : Kirim daftar pasien
-  PatientController --> UI : Tampilkan list pasien
-end
+  ClinicalService --> PatientController : Daftar pasien
+  PatientController --> UI : Tampilkan daftar pasien
 
-group Input hasil diagnostik
-  Dokter -> UI : Buka form laporan diagnostik
-  UI -> DiagController : Kirim data laporan
-  DiagController -> DiagService : Validasi dan simpan
-  DiagService -> DB : Simpan diagnostic report
-  DB --> DiagService : Data berhasil disimpan
-  DiagService --> DiagController : Status sukses
-  DiagController --> UI : Tampilkan laporan terbaru
-end
-
-group Catatan klinis pasien lama
-  Dokter -> UI : Pilih pasien dari daftar / hasil cari
+  Dokter -> UI : Pilih pasien
   UI -> PatientController : Request detail pasien
-  PatientController -> ClinicalService : Ambil demographics, problem list, dan SOAP
-  ClinicalService -> DB : Query patient + encounters + problems
-  DB --> ClinicalService : Data rekam medis pasien
-  ClinicalService --> PatientController : Kirim detail pasien
+  PatientController -> ClinicalService : Ambil demographics, encounter, SOAP
+  ClinicalService -> DB : Query patient + encounters
+  DB --> ClinicalService : Data rekam medis
+  ClinicalService --> PatientController : Detail pasien
   PatientController --> UI : Tampilkan demographics dan riwayat SOAP
-
-  opt Tambah catatan pemeriksaan baru
-    Dokter -> UI : Input keluhan, diagnosa, dan SOAP
-    UI -> EncounterController : Kirim data pemeriksaan
-    EncounterController -> ClinicalService : Validasi data klinis
-
-    alt Data valid
-      ClinicalService -> DB : Simpan Encounter
-      ClinicalService -> DB : Simpan Problem List
-      ClinicalService -> DB : Simpan Clinical Notes
-      DB --> ClinicalService : Data berhasil disimpan
-      ClinicalService --> EncounterController : Status sukses
-      EncounterController --> UI : Tampilkan catatan terbaru
-    else Data tidak valid
-      ClinicalService --> EncounterController : Status gagal
-      EncounterController --> UI : Tampilkan pesan error
-    end
-  end
 end
 
-group Tambah pasien baru
-  Dokter -> UI : Isi data pasien dan SOAP awal
-  UI -> PatientController : Kirim data pasien baru
-  PatientController -> ClinicalService : Validasi data pasien dan SOAP
+group Tambah / Edit Catatan oleh Dokter
+  Dokter -> UI : Input keluhan, diagnosa, dan SOAP
+  UI -> EncounterController : Kirim data pemeriksaan
+  EncounterController -> ClinicalService : Validasi clinical note
 
   alt Data valid
-    ClinicalService -> DB : Simpan Patient
-    ClinicalService -> DB : Simpan Encounter pertama
-    ClinicalService -> DB : Simpan Problem List
-    ClinicalService -> DB : Simpan Clinical Notes
+    ClinicalService -> DB : Simpan Encounter
+    ClinicalService -> DB : Simpan ClinicalNote
+    ClinicalService -> DB : Simpan Problem
     DB --> ClinicalService : Data berhasil disimpan
-    ClinicalService --> PatientController : Status sukses
-    PatientController --> UI : Tampilkan pasien baru dan riwayat SOAP
+    ClinicalService --> EncounterController : Status sukses
+    EncounterController --> UI : Tampilkan catatan terbaru
   else Data tidak valid
-    ClinicalService --> PatientController : Status gagal
-    PatientController --> UI : Tampilkan pesan error
+    ClinicalService --> EncounterController : Status gagal
+    EncounterController --> UI : Tampilkan pesan error
   end
+end
+
+group Input Objective / Tanda Vital oleh Perawat
+  Perawat -> UI : Pilih pasien
+  UI -> PatientController : Request detail pasien
+  PatientController -> ClinicalService : Ambil data pasien
+  ClinicalService -> DB : Query patient + encounters
+  DB --> ClinicalService : Data pasien
+  ClinicalService --> PatientController : Detail pasien
+  PatientController --> UI : Tampilkan data pasien
+
+  Perawat -> UI : Input Objective / tanda vital
+  UI -> EncounterController : Kirim data objective
+  EncounterController -> ClinicalService : Validasi data objective
+
+  alt Data valid
+    ClinicalService -> DB : Simpan objective pada ClinicalNote
+    DB --> ClinicalService : Data berhasil disimpan
+    ClinicalService --> EncounterController : Status sukses
+    EncounterController --> UI : Tampilkan catatan terbaru
+  else Data tidak valid
+    ClinicalService --> EncounterController : Status gagal
+    EncounterController --> UI : Tampilkan pesan error
+  end
+end
+
+group Diagnostic Reports
+  Dokter -> UI : Buka halaman Diagnostic Reports
+  UI -> DiagController : Request laporan diagnostik
+  DiagController -> DiagService : Ambil report pasien
+  DiagService -> DB : Query diagnostic reports
+  DB --> DiagService : Data report
+  DiagService --> DiagController : Daftar report
+  DiagController --> UI : Tampilkan lab/radiologi
+
+  Dokter -> UI : Tambah laporan lab/radiologi
+  UI -> DiagController : Kirim data report
+  DiagController -> DiagService : Validasi report
+
+  alt Data valid
+    DiagService -> DB : Simpan DiagnosticReport
+    DB --> DiagService : Data berhasil disimpan
+    DiagService --> DiagController : Status sukses
+    DiagController --> UI : Tampilkan laporan terbaru
+  else Data tidak valid
+    DiagService --> DiagController : Status gagal
+    DiagController --> UI : Tampilkan pesan error
+  end
+end
+
+group Manajemen Pengguna oleh Admin
+  Admin -> UI : Buka Manajemen Pengguna
+  UI -> UserController : Request daftar user
+  UserController -> UserService : Ambil data user
+  UserService -> DB : Query users
+  DB --> UserService : Data user
+  UserService --> UserController : Daftar user
+  UserController --> UI : Tampilkan daftar pengguna
+
+  Admin -> UI : Tambah / nonaktifkan user
+  UI -> UserController : Kirim perubahan user
+  UserController -> UserService : Validasi user
+  UserService -> DB : Simpan perubahan user
+  DB --> UserService : Data berhasil diperbarui
+  UserService --> UserController : Status sukses
+  UserController --> UI : Tampilkan daftar user terbaru
 end
 
 @enduml
