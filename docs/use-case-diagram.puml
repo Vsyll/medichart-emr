@@ -1,0 +1,49 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+
+actor Dokter
+
+rectangle "Sistem Catatan Pemeriksaan Dokter" {
+
+  usecase "Login" as UC1
+  usecase "Lihat Dashboard Pasien" as UC2
+  usecase "Lihat Daftar Pasien" as UC3
+  usecase "Cari Data Pasien" as UC4
+  usecase "Tambah Pasien Baru" as UC5
+
+  usecase "Lihat Data Demographics" as UC6
+  usecase "Lihat Riwayat SOAP" as UC7
+
+  usecase "Input Keluhan Pasien" as UC8
+  usecase "Input Diagnosa\nProblem List" as UC9
+  usecase "Input Catatan Klinis\nSOAP" as UC10
+
+  usecase "Simpan Catatan Pemeriksaan" as UC11
+  usecase "Edit Catatan Pemeriksaan" as UC12
+}
+
+Dokter --> UC1
+Dokter --> UC2
+Dokter --> UC4
+Dokter --> UC5
+Dokter --> UC6
+Dokter --> UC7
+Dokter --> UC8
+Dokter --> UC9
+Dokter --> UC10
+Dokter --> UC11
+Dokter --> UC12
+
+UC2 ..> UC3 : <<include>>
+UC4 ..> UC3 : <<include>>
+
+UC5 ..> UC6 : <<include>>
+
+UC11 ..> UC8 : <<include>>
+UC11 ..> UC9 : <<include>>
+UC11 ..> UC10 : <<include>>
+
+UC12 ..> UC10 : <<include>>
+
+@enduml
