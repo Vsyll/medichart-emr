@@ -111,7 +111,7 @@ Doctor "1" -- "0..*" Encounter : menangani
 Encounter "1" -- "0..1" ClinicalNote : menghasilkan
 Encounter "1" -- "0..1" VitalSign : memiliki
 Encounter "1" -- "0..*" Problem : mencatat
-Encounter "0..1" -- "0..*" DiagnosticReport : terkait
+Encounter "1" -- "0..*" DiagnosticReport : terkait
 
 Patient "1" -- "0..*" Problem : memiliki
 Patient "1" -- "0..*" DiagnosticReport : memiliki
