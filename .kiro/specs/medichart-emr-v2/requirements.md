@@ -257,6 +257,17 @@ Sistem ini digunakan di lingkungan klinis oleh tiga peran utama: Dokter, Perawat
 
 ---
 
+### Requirement 15b: Presentasi (LaTeX Beamer)
+
+**User Story:** Sebagai tim penyusun laporan, saya ingin file presentasi berbasis LaTeX Beamer yang merangkum materi laporan sehingga dapat dikompilasi menjadi PDF slide presentasi.
+
+#### Acceptance Criteria
+
+1. THE Doc_Module SHALL menghasilkan file `docs/presentation.tex` yang merupakan sumber LaTeX Beamer untuk presentasi proyek.
+2. THE Doc_Module SHALL menyertakan slide untuk: Pendahuluan, Deskripsi Sistem, Arsitektur, Desain Data, Keamanan (RBAC), Diagnostic Reports, Diagram utama, Implementasi & Validasi, dan Kesimpulan.
+3. THE Doc_Module SHALL menyediakan instruksi singkat dalam komentar tentang cara menambahkan diagram yang dirender (PNG/SVG) ke dalam file Beamer.
+
+
 ### Requirement 16: README yang Komprehensif
 
 **User Story:** Sebagai pengembang atau pengguna baru, saya ingin README yang informatif, sehingga saya dapat memahami dan menjalankan sistem dengan cepat.

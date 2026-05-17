@@ -305,6 +305,11 @@ Implementasi MediChart EMR v2 dilakukan secara inkremental dalam satu file `medi
     - Cakup konteks proyek secara keseluruhan (analisis, desain, implementasi, validasi, pembahasan, kesimpulan)
     - _Requirements: 15.8_
 
+  - [x] 15.6 Buat presentasi LaTeX Beamer
+    - Buat file `docs/presentation.tex` sebagai sumber slide presentasi (Beamer)
+    - Sertakan slide untuk Pendahuluan, Deskripsi Sistem, Arsitektur, Desain Data, Keamanan, Diagnostic Reports, Diagram, Implementasi & Validasi, Kesimpulan
+    - _Requirements: 15b.1, 15b.2, 15b.3_
+
 - [x] 16. Verifikasi akhir dan polish
   - [x] 16.1 Verifikasi konsistensi visual dan responsivitas
     - Pastikan semua elemen UI baru (tab, badge status, form lab/imaging) menggunakan design tokens yang sudah ada (warna, tipografi, border-radius)

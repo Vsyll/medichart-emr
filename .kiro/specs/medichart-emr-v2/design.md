@@ -113,6 +113,7 @@ Untuk kebutuhan pengumpulan akademik, dokumentasi disiapkan dalam beberapa forma
 3. `docs/template-laporan-odt.md` sebagai struktur siap salin ke Word/ODT
 4. `docs/makalah.md` sebagai naskah laporan proyek menyeluruh dan deskriptif setara dokumen makalah akademik
 5. `README.md` memuat lampiran source PlantUML agar proses penyusunan lampiran laporan lebih cepat
+6. `docs/presentation.tex` sebagai sumber file LaTeX Beamer untuk presentasi (slides)
 
 ---
 

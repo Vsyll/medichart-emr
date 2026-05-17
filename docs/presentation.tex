@@ -1,0 +1,114 @@
+% Beamer presentation for MediChart EMR v2
+\documentclass{beamer}
+\usetheme{Madrid}
+\usecolortheme{seagull}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage{hyperref}
+
+\title{MediChart EMR v2 — Ringkasan Proyek}
+\author{[Nama Kelompok]}
+\institute{Konsep Teknologi Informasi}
+\date{[Tanggal]}
+
+\begin{document}
+
+\begin{frame}
+  \titlepage
+\end{frame}
+
+\begin{frame}{Outline}
+  \tableofcontents[hideallsubsections]
+\end{frame}
+
+\section{Pendahuluan}
+\begin{frame}{Pendahuluan}
+  \begin{itemize}
+    \item Tujuan: memperluas MediChart v0 dengan RBAC dan Diagnostic Reports
+    \item Scope: SPA client-side, penyimpanan `localStorage`, sesi di `sessionStorage`
+  \end{itemize}
+\end{frame}
+
+\section{Deskripsi Sistem}
+\begin{frame}{Deskripsi Sistem}
+  \begin{itemize}
+    \item Peran: Dokter, Perawat, Admin
+    \item Fitur utama: autentikasi, manajemen pasien, SOAP, Diagnostic Reports, admin
+    \item Deliverables: kode demo, laporan (Markdown/LaTeX), PlantUML diagrams, slides
+  \end{itemize}
+\end{frame}
+
+\section{Arsitektur}
+\begin{frame}{Arsitektur Sistem}
+  \begin{itemize}
+    \item SPA monolitik di `medichart.html`
+    \item Modul: Auth, Patient, Clinical, DiagReport, Admin
+    \item Penyimpanan: `localStorage` (data), `sessionStorage` (sesi)
+  \end{itemize}
+\end{frame}
+
+\section{Desain Data}
+\begin{frame}{Desain Data — Entity Highlights}
+  \begin{itemize}
+    \item `User`, `Patient`, `Encounter`, `ClinicalNote`, `Problem`, `DiagnosticReport`
+    \item DiagnosticReport: `reportId`, `patientId`, `encounterId`, `type`, `date`, `status`, `interpretation`
+  \end{itemize}
+\end{frame}
+
+\section{Keamanan}
+\begin{frame}{Keamanan (RBAC)}
+  \begin{itemize}
+    \item Tiga peran: Dokter (full), Perawat (terbatas), Admin (manajemen)
+    \item Kontrol tampilan dan aksi pada UI berdasarkan `canAccess()`
+  \end{itemize}
+\end{frame}
+
+\section{Diagnostic Reports}
+\begin{frame}{Diagnostic Reports (Lab \\ \& Imaging)}
+  \begin{itemize}
+    \item Tipe `lab` dan `imaging`; status: `pending`, `final`, `amended`
+    \item Integrasi: dapat dikaitkan ke `encounterId` atau berdiri sendiri
+    \item Tampilan: tab terpisah, daftar ringkasan, detail lengkap dengan interpretasi
+  \end{itemize}
+\end{frame}
+
+\section{Antarmuka}
+\begin{frame}{Antarmuka dan Alur}
+  \begin{itemize}
+    \item Login → AppShell → modul berdasarkan peran
+    \item Panel: Patients, Diag Reports (Lab/Imaging), Admin
+  \end{itemize}
+\end{frame}
+
+\section{Diagram Utama}
+\begin{frame}{Diagram Utama}
+  \begin{itemize}
+    \item Class Diagram: `docs/class-diagram.puml` (render ke PNG untuk disertakan)
+    \item Package Diagram (simple/detailed): `docs/package-diagram.puml`, `docs/package-diagram-detailed.puml`
+    \item Component / DFD: `docs/component-diagram.puml`, `docs/dfd-level0.puml` / `docs/dfd-level1.puml`
+  \end{itemize}
+  \vspace{6pt}
+  \footnotesize{Catatan: render PlantUML sources ke PNG/SVG lalu letakkan di `docs/diagrams/` dan gunakan `\includegraphics` untuk menampilkan diagram di PDF.}
+\end{frame}
+
+\section{Implementasi dan Validasi}
+\begin{frame}{Implementasi dan Validasi}
+  \begin{itemize}
+    \item Implementasi: `medichart.html` (self-contained)
+    \item Validasi: smoke tests, pemeriksaan keberadaan artefak, propery checks (opsional)
+  \end{itemize}
+\end{frame}
+
+\section{Kesimpulan}
+\begin{frame}{Kesimpulan}
+  \begin{itemize}
+    \item MediChart v2 meningkatkan modelling klinis melalui RBAC dan Diagnostic Reports
+    \item Dokumentasi lengkap tersedia: laporan, makalah, PlantUML diagrams, slides
+  \end{itemize}
+\end{frame}
+
+\begin{frame}{Pertanyaan}
+  \centering Terima kasih. Pertanyaan?
+\end{frame}
+
+\end{document}
