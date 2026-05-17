@@ -1,0 +1,60 @@
+@startuml
+
+class Patient {
+  +patientId: string
+  +name: string
+  +age: int
+  +gender: string
+  +address: string
+  +getDemographics()
+  +createPatient()
+}
+
+class Doctor {
+  +doctorId: string
+  +name: string
+  +specialty: string
+  +login()
+  +createClinicalNote()
+}
+
+class Encounter {
+  +encounterId: string
+  +patientId: string
+  +doctorId: string
+  +date: datetime
+  +chiefComplaint: string
+  +status: string
+  +startEncounter()
+  +closeEncounter()
+}
+
+class ClinicalNote {
+  +noteId: string
+  +encounterId: string
+  +subjective: string
+  +objective: string
+  +assessment: string
+  +plan: string
+  +saveNote()
+  +updateNote()
+}
+
+class Problem {
+  +problemId: string
+  +patientId: string
+  +encounterId: string
+  +diagnosisName: string
+  +icdCode: string
+  +status: string
+  +addProblem()
+  +updateStatus()
+}
+
+Patient "1" -- "0..*" Encounter : memiliki
+Doctor "1" -- "0..*" Encounter : menangani
+Encounter "1" -- "1" ClinicalNote : menghasilkan
+Patient "1" -- "0..*" Problem : memiliki
+Encounter "1" -- "0..*" Problem : mencatat
+
+@enduml

@@ -1,0 +1,71 @@
+@startuml
+
+actor Dokter
+boundary "UI Dashboard" as UI
+control "Patient Controller" as PatientController
+control "Encounter Controller" as EncounterController
+entity "Clinical Service" as Service
+database "Medical Record Database" as DB
+
+Dokter -> UI : Login ke sistem
+UI -> PatientController : Kirim data login
+PatientController -> Service : Validasi user
+Service -> DB : Cek akun dokter
+DB --> Service : Data akun valid
+Service --> PatientController : Login berhasil
+PatientController --> UI : Tampilkan dashboard pasien
+
+UI -> PatientController : Request daftar pasien
+PatientController -> Service : Ambil semua pasien
+Service -> DB : Query patients
+DB --> Service : Data pasien
+Service --> PatientController : Kirim daftar pasien
+PatientController --> UI : Tampilkan list pasien
+
+alt Dokter memilih pasien lama
+  Dokter -> UI : Pilih pasien dari list / hasil cari
+  UI -> PatientController : Request detail pasien
+  PatientController -> Service : Ambil demographics, problem list, dan SOAP
+  Service -> DB : Query patient + encounters + problems
+  DB --> Service : Data rekam medis pasien
+  Service --> PatientController : Kirim detail pasien
+  PatientController --> UI : Tampilkan demographics dan riwayat SOAP
+
+  opt Tambah catatan pemeriksaan baru
+    Dokter -> UI : Input keluhan, diagnosa, dan SOAP
+    UI -> EncounterController : Kirim data pemeriksaan
+    EncounterController -> Service : Validasi data klinis
+
+    alt Data valid
+      Service -> DB : Simpan Encounter
+      Service -> DB : Simpan Problem List
+      Service -> DB : Simpan Clinical Notes
+      DB --> Service : Data berhasil disimpan
+      Service --> EncounterController : Status sukses
+      EncounterController --> UI : Tampilkan catatan terbaru
+    else Data tidak valid
+      Service --> EncounterController : Status gagal
+      EncounterController --> UI : Tampilkan pesan error
+    end
+  end
+
+else Dokter menambah pasien baru
+  Dokter -> UI : Isi data pasien dan SOAP awal
+  UI -> PatientController : Kirim data pasien baru
+  PatientController -> Service : Validasi data pasien dan SOAP
+
+  alt Data valid
+    Service -> DB : Simpan Patient
+    Service -> DB : Simpan Encounter pertama
+    Service -> DB : Simpan Problem List
+    Service -> DB : Simpan Clinical Notes
+    DB --> Service : Data berhasil disimpan
+    Service --> PatientController : Status sukses
+    PatientController --> UI : Tampilkan pasien baru dan riwayat SOAP
+  else Data tidak valid
+    Service --> PatientController : Status gagal
+    PatientController --> UI : Tampilkan pesan error
+  end
+end
+
+@enduml
