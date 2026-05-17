@@ -881,21 +881,30 @@ body {
         <div class="doc-avatar" id="sb-av" onclick="openProfilePhoto()"></div>
         <div>
           <div class="doc-name" id="sb-name">belum login</div>
-          <div class="doc-role">Dokter Umum</div>
+          <div class="doc-role" id="sb-role">—</div>
         </div>
       </div>
     </div>
     <nav class="sb-nav" id="sb-nav">
-      <div class="nav-item active" id="nav-dashboard" onclick="navigateTo('dashboard')">
+      <!-- Menu klinis: hanya untuk Dokter dan Perawat, tersembunyi dari Admin -->
+      <div class="nav-item active" id="nav-dashboard" data-role-access="Dokter,Perawat" onclick="navigateTo('dashboard')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <rect x="3" y="3" width="7" height="7" rx="1"/>
           <rect x="14" y="3" width="7" height="7" rx="1"/>
           <rect x="14" y="14" width="7" height="7" rx="1"/>
           <rect x="3" y="14" width="7" height="7" rx="1"/>
         </svg>
-        Dashboard
+        Rekam Medis
       </div>
-      <div class="nav-item hidden" id="nav-admin" onclick="navigateTo('admin')">
+      <div class="nav-item hidden" id="nav-diag" data-role-access="Dokter,Perawat" onclick="navigateTo('diag-reports')">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path d="M4 4h16v16H4z"/>
+          <path d="M8 12h8M8 8h8M8 16h5"/>
+        </svg>
+        Diagnostic Reports
+      </div>
+      <!-- Menu admin: hanya untuk Admin -->
+      <div class="nav-item hidden" id="nav-admin" data-role-access="Admin" onclick="navigateTo('admin')">
         <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
           <circle cx="9" cy="7" r="4"/>
@@ -917,6 +926,9 @@ body {
 
   <!-- Main -->
   <main class="app-main" id="app-main"></main>
+
+  <!-- Diagnostic Reports Page -->
+  <main class="app-main hidden" id="page-diag-reports"></main>
 
   <!-- Admin Page -->
   <main class="app-main hidden" id="page-admin">
@@ -1087,6 +1099,8 @@ const State = {
   doctor:         null,   // dokter yang sedang login
   currentPatient: null,   // pasien yang sedang dipilih
   searchQuery:    '',     // query pencarian
+  diagTab:        'lab',  // tab Diagnostic Reports aktif
+  currentDiagId:  null,   // laporan diagnostik yang sedang dipilih
 };
 
 /* ===================================================================
@@ -1152,10 +1166,15 @@ const Service = {
    * validateSoapData — validasi data pemeriksaan (edit/tambah encounter)
    * @returns {string[]} array pesan error
    */
-  validateSoapData({ diagnosa, soap }) {
+  validateSoapData({ diagnosa, soap }, role = 'Dokter') {
     const errs = [];
-    if (!diagnosa.trim()) errs.push('Diagnosa / Problem List tidak boleh kosong.');
-    const hasSOAP = soap.S.trim() || soap.O.trim() || soap.A.trim() || soap.P.trim();
+    const canProblem = role === 'Dokter';
+    const canSubjective = role === 'Dokter';
+    const canObjective = role === 'Dokter' || role === 'Perawat';
+    const canAssessmentPlan = role === 'Dokter';
+
+    if (canProblem && !diagnosa.trim()) errs.push('Diagnosa / Problem List tidak boleh kosong.');
+    const hasSOAP = (canSubjective ? soap.S.trim() : '') || (canObjective ? soap.O.trim() : '') || (canAssessmentPlan ? soap.A.trim() : '') || (canAssessmentPlan ? soap.P.trim() : '');
     if (!hasSOAP) errs.push('Minimal satu kolom SOAP (S/O/A/P) harus terisi.');
     return errs;
   },
@@ -1213,6 +1232,130 @@ const Service = {
     DB.encounters.push(enc);
     return enc;
   },
+
+  /** Perbarui data pasien yang sudah ada */
+  updatePatient(patientId, data) {
+    const patient = DB.patients.find(item => item.id === patientId);
+    if (!patient) return null;
+    patient.name = data.name.trim();
+    patient.age = +data.age;
+    patient.gender = data.gender;
+    patient.address = data.address.trim();
+    return patient;
+  },
+
+  /** Ambil semua laporan diagnostik dari localStorage, urut terbaru dahulu */
+  getAllReports() {
+    return store.get(KEYS.DIAG_REPORTS)
+      .filter(report => !report.patientId || DB.patients.some(patient => patient.id === report.patientId))
+      .slice()
+      .sort((a, b) => new Date(b.date || b.updatedAt || b.createdAt) - new Date(a.date || a.updatedAt || a.createdAt));
+  },
+
+  /** Ambil laporan diagnostik untuk pasien tertentu */
+  getReportsByPatient(patientId) {
+    return this.getAllReports().filter(report => report.patientId === patientId);
+  },
+
+  /** Ambil laporan diagnostik untuk encounter tertentu */
+  getReportsByEncounter(encounterId) {
+    return this.getAllReports().filter(report => report.encounterId === encounterId);
+  },
+
+  /** Cari laporan berdasarkan ID */
+  getReportById(reportId) {
+    return this.getAllReports().find(report => report.reportId === reportId) || null;
+  },
+
+  /** Filter laporan berdasarkan tipe */
+  filterByType(patientId, type) {
+    return this.getReportsByPatient(patientId).filter(report => report.type === type);
+  },
+
+  /** Validasi input laporan diagnostik */
+  validateReport(data) {
+    const errors = {};
+    const validTypes = ['lab', 'imaging'];
+    const validStatuses = ['pending', 'final', 'amended'];
+    const validModalities = ['X-Ray', 'USG', 'CT Scan', 'MRI'];
+
+    if (!data.patientId) errors.patientId = 'Pasien wajib dipilih.';
+    if (data.encounterId === undefined) data.encounterId = null;
+    if (!validTypes.includes(data.type)) errors.type = 'Tipe laporan tidak valid.';
+    if (!data.date) errors.date = 'Tanggal wajib diisi.';
+    if (!validStatuses.includes(data.status || 'pending')) errors.status = 'Status laporan tidak valid.';
+
+    if (data.type === 'lab') {
+      const lab = data.labData || {};
+      if (!lab.testName || !lab.testName.trim()) errors.testName = 'Nama tes wajib diisi.';
+      const result = (lab.results && lab.results[0]) || {};
+      if (!result.paramName || !result.paramName.trim()) errors.paramName = 'Nama parameter wajib diisi.';
+      if (result.value === undefined || String(result.value).trim() === '') errors.value = 'Nilai hasil wajib diisi.';
+      if (!result.unit || !result.unit.trim()) errors.unit = 'Satuan wajib diisi.';
+      if (!result.referenceRange || !String(result.referenceRange).trim()) errors.referenceRange = 'Nilai referensi wajib diisi.';
+    }
+
+    if (data.type === 'imaging') {
+      const img = data.imagingData || {};
+      if (!validModalities.includes(img.modality)) errors.modality = 'Jenis pemeriksaan wajib dipilih.';
+      if (!img.findings || !img.findings.trim()) errors.findings = 'Temuan wajib diisi.';
+    }
+
+    return { valid: Object.keys(errors).length === 0, errors };
+  },
+
+  /** Tambah laporan diagnostik baru */
+  addReport(data) {
+    const normalized = {
+      patientId: data.patientId,
+      encounterId: data.encounterId || null,
+      type: data.type,
+      date: data.date,
+      status: data.status || 'pending',
+      interpretation: data.interpretation || '',
+      labData: data.type === 'lab' ? data.labData : null,
+      imagingData: data.type === 'imaging' ? data.imagingData : null,
+    };
+
+    const validation = this.validateReport(normalized);
+    if (!validation.valid) return { errors: validation.errors };
+
+    const reports = store.get(KEYS.DIAG_REPORTS);
+    const report = {
+      reportId: generateId(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      ...normalized,
+    };
+    reports.push(report);
+    store.set(KEYS.DIAG_REPORTS, reports);
+    return { report };
+  },
+
+  /** Perbarui status laporan diagnostik */
+  updateStatus(reportId, newStatus) {
+    const reports = store.get(KEYS.DIAG_REPORTS);
+    const report = reports.find(item => item.reportId === reportId);
+    if (!report) return null;
+    if (report.status !== 'pending' && newStatus === 'pending') return report;
+    if (report.status === 'amended' && newStatus !== 'amended') return report;
+    report.status = report.status === 'final' && newStatus !== 'amended' ? 'amended' : newStatus;
+    report.updatedAt = new Date().toISOString();
+    store.set(KEYS.DIAG_REPORTS, reports);
+    return report;
+  },
+
+  /** Perbarui isi laporan; final akan otomatis menjadi amended */
+  updateReport(reportId, updates) {
+    const reports = store.get(KEYS.DIAG_REPORTS);
+    const report = reports.find(item => item.reportId === reportId);
+    if (!report) return null;
+    Object.assign(report, updates);
+    if (report.status === 'final') report.status = 'amended';
+    report.updatedAt = new Date().toISOString();
+    store.set(KEYS.DIAG_REPORTS, reports);
+    return report;
+  },
 };
 
 /* ===================================================================
@@ -1242,7 +1385,7 @@ function login() {
 
     // Update sidebar: nama dan role
     document.getElementById('sb-name').textContent = session.name;
-    const roleEl = document.querySelector('.doc-role');
+    const roleEl = document.getElementById('sb-role');
     if (roleEl) roleEl.textContent = session.role;
 
     // Avatar: inisial nama
@@ -1256,17 +1399,13 @@ function login() {
       avEl.innerHTML = `<div style="width:40px;height:40px;border-radius:50%;background:var(--primary-lt);color:var(--primary-dk);display:grid;place-items:center;font-size:13px;font-weight:800;">${initials}</div>`;
     }
 
-    // Tampilkan/sembunyikan nav item berdasarkan peran
-    const navAdmin = document.getElementById('nav-admin');
-    if (navAdmin) {
-      if (Auth_Module.canAccess('manage_users')) {
-        navAdmin.classList.remove('hidden');
-      } else {
-        navAdmin.classList.add('hidden');
-      }
-    }
+    // Terapkan navigasi berbasis peran
+    updateNavForRole(session.role);
 
-    renderDashboard();
+    // Render halaman awal sesuai peran (Admin → halaman admin, lainnya → dashboard)
+    if (session.role !== 'Admin') {
+      renderDashboard();
+    }
     return;
   }
 
@@ -1284,17 +1423,51 @@ function login() {
   document.getElementById('sb-av').innerHTML =
     '<img src="' + doctor.photo + '" alt="' + doctor.name + '">';
   document.getElementById('sb-name').textContent = doctor.name;
+  const roleElFallback = document.getElementById('sb-role');
+  if (roleElFallback) roleElFallback.textContent = 'Dokter';
 
-  // Sembunyikan nav admin untuk dokter lama
-  const navAdmin = document.getElementById('nav-admin');
-  if (navAdmin) navAdmin.classList.add('hidden');
+  // Terapkan navigasi berbasis peran untuk dokter lama (selalu Dokter)
+  updateNavForRole('Dokter');
 
   renderDashboard();
 }
 
+/* ------------------------------------------------------------------
+   updateNavForRole(role)
+   Tampilkan/sembunyikan item navigasi berdasarkan peran pengguna.
+   - Menu klinis (Rekam Medis): hanya Dokter dan Perawat
+   - Menu admin (Manajemen Pengguna): hanya Admin
+   Validates: Requirements 3.7, 3.8
+------------------------------------------------------------------ */
+function updateNavForRole(role) {
+  const navItems = document.querySelectorAll('#sb-nav .nav-item[data-role-access]');
+  navItems.forEach(item => {
+    const allowedRoles = item.getAttribute('data-role-access').split(',').map(r => r.trim());
+    if (allowedRoles.includes(role)) {
+      item.classList.remove('hidden');
+    } else {
+      item.classList.add('hidden');
+    }
+  });
+
+  // Jika Admin login, arahkan ke halaman admin secara otomatis
+  // (karena menu klinis tersembunyi)
+  if (role === 'Admin') {
+    const mainEl  = document.getElementById('app-main');
+    const adminEl = document.getElementById('page-admin');
+    const navDash = document.getElementById('nav-dashboard');
+    const navAdm  = document.getElementById('nav-admin');
+    if (mainEl)  mainEl.classList.add('hidden');
+    if (adminEl) adminEl.classList.remove('hidden');
+    if (navDash) navDash.classList.remove('active');
+    if (navAdm)  navAdm.classList.add('active');
+    renderAdminPage();
+  }
+}
+
 function logout() {
   Auth_Module.logout(); // hapus sesi dari sessionStorage + redirect ke login
-  State.doctor = null; State.currentPatient = null; State.searchQuery = '';
+  State.doctor = null; State.currentPatient = null; State.searchQuery = ''; State.diagTab = 'lab'; State.currentDiagId = null;
   document.getElementById('inp-usr').value = '';
   document.getElementById('inp-pwd').value = '';
   document.getElementById('l-err').style.display = 'none';
@@ -1341,7 +1514,7 @@ function renderDashboard() {
           </div>
           <div style="display:flex;align-items:center;gap:8px;">
             <span class="badge b-gray" id="pt-count"></span>
-            <button class="btn btn-sm btn-add-compact" onclick="showAddPatientForm()">+ Pasien</button>
+            ${Auth_Module.canAccess('edit_patients') ? `<button class="btn btn-sm btn-add-compact" onclick="showAddPatientForm()">+ Pasien</button>` : ''}
           </div>
         </div>
         <div class="card-body" style="padding-bottom:8px;">
@@ -1506,6 +1679,14 @@ function renderPatientDetail(patientId) {
         </div>
         <div style="display:flex;gap:7px;align-items:center;">
           <span class="badge b-blue">${esc(p.id)}</span>
+          ${Auth_Module.canAccess('edit_patients') ? `
+          <button class="btn btn-ghost btn-sm" onclick="showEditPatientForm('${p.id}')">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+            </svg>
+            Edit Pasien
+          </button>` : ''}
           <button class="btn btn-green btn-sm" onclick="showAddSoapForm()">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
@@ -1613,8 +1794,11 @@ function renderPatientHistory(patientId) {
             ${renderSoapRow('A', 'Assessment',  enc.soap.A)}
             ${renderSoapRow('P', 'Plan',        enc.soap.P)}
           </div>
+          ${renderEncounterReports(enc.id)}
         </div>
         <div class="enc-actions">
+          ${Auth_Module.canAccess('edit_diag_reports') ? `<button class="btn btn-ghost btn-sm" onclick="openReportForm('lab', '${enc.id}')">+ Lab</button>` : ''}
+          ${Auth_Module.canAccess('edit_diag_reports') ? `<button class="btn btn-ghost btn-sm" onclick="openReportForm('imaging', '${enc.id}')">+ Radiologi</button>` : ''}
           <button class="btn btn-amber btn-sm" onclick="showEditSoapForm('${enc.id}')">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
@@ -1744,6 +1928,66 @@ function addPatientWithInitialSoap() {
   selectPatient(patient.id);
 }
 
+function showEditPatientForm(patientId) {
+  if (!Auth_Module.canAccess('edit_patients')) {
+    showToast('Akses ditolak.', 'err');
+    return;
+  }
+  const patient = Service.getPatientById(patientId);
+  if (!patient) { showToast('Data pasien tidak ditemukan.', 'err'); return; }
+
+  openModal(`Edit Pasien — ${esc(patient.name)}`, `
+    <div class="field">
+      <label>Nama Lengkap <span class="req">*</span></label>
+      <input type="text" id="ep-name" value="${esc(patient.name)}">
+    </div>
+    <div class="grid-2">
+      <div class="field">
+        <label>Umur <span class="req">*</span></label>
+        <input type="number" id="ep-age" value="${esc(patient.age)}">
+      </div>
+      <div class="field">
+        <label>Jenis Kelamin <span class="req">*</span></label>
+        <select id="ep-gender">
+          <option value="Laki-laki" ${patient.gender === 'Laki-laki' ? 'selected' : ''}>Laki-laki</option>
+          <option value="Perempuan" ${patient.gender === 'Perempuan' ? 'selected' : ''}>Perempuan</option>
+        </select>
+      </div>
+    </div>
+    <div class="field">
+      <label>Alamat <span class="req">*</span></label>
+      <textarea id="ep-addr">${esc(patient.address)}</textarea>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" onclick="submitEditPatientForm('${patient.id}')">Simpan</button>
+    </div>
+  `);
+}
+
+function submitEditPatientForm(patientId) {
+  const patient = Service.getPatientById(patientId);
+  if (!patient) { showToast('Data pasien tidak ditemukan.', 'err'); return; }
+  const data = {
+    name: val('ep-name'),
+    age: val('ep-age'),
+    gender: val('ep-gender'),
+    address: val('ep-addr'),
+  };
+  if (!data.name.trim() || !data.age || !data.gender || !data.address.trim()) {
+    showToast('Lengkapi semua field pasien.', 'err');
+    return;
+  }
+  const updated = Service.updatePatient(patientId, data);
+  if (!updated) { showToast('Gagal memperbarui pasien.', 'err'); return; }
+  closeModal();
+  showToast('✓ Data pasien berhasil diperbarui.', 'ok');
+  renderDashboard();
+  if (State.currentPatient?.id === patientId) {
+    selectPatient(patientId);
+  }
+}
+
 /* ------------------------------------------------------------------
    showEditSoapForm(encId)
    Buka modal form edit — isi dengan data encounter yang sudah ada.
@@ -1752,6 +1996,11 @@ function addPatientWithInitialSoap() {
 function showEditSoapForm(encId) {
   const enc = Service.getEncounterById(encId);
   if (!enc) { showToast('Data tidak ditemukan.', 'err'); return; }
+  const role = State.doctor?.role || 'Dokter';
+  const canProblem = role === 'Dokter';
+  const canSubjective = role === 'Dokter';
+  const canObjective = role === 'Dokter' || role === 'Perawat';
+  const canAssessmentPlan = role === 'Dokter';
 
   openModal(`Edit Catatan — ${enc.id}`, `
     <div class="val-box" id="vb-edit"></div>
@@ -1759,7 +2008,7 @@ function showEditSoapForm(encId) {
       padding:8px 12px;font-size:12px;color:#78350F;margin-bottom:14px;">
       ⚠ Perubahan akan memperbarui data catatan yang sudah ada, bukan membuat catatan baru.
     </div>
-    <div class="field">
+    ${canProblem ? `<div class="field">
       <label>Keluhan Utama</label>
       <textarea id="e-kel" placeholder="Keluhan pasien…">${esc(enc.keluhan)}</textarea>
     </div>
@@ -1767,14 +2016,14 @@ function showEditSoapForm(encId) {
       <label>Diagnosa / Problem List <span class="req">*</span></label>
       <textarea id="e-diag" placeholder="Diagnosa…">${esc(enc.diagnosa)}</textarea>
       <div class="f-msg" id="ee-diag"></div>
-    </div>
+    </div>` : ''}
     <div class="form-section-label">Catatan SOAP <span style="font-weight:400;text-transform:none;letter-spacing:0;">(isi minimal satu)</span></div>
     <div class="f-msg" id="ee-soap" style="margin-bottom:8px;"></div>
     <div class="grid-2">
-      ${soapField('e-s','Subjective','S','Cerita pasien…',    enc.soap.S)}
-      ${soapField('e-o','Objective','O','Pemeriksaan fisik…', enc.soap.O)}
-      ${soapField('e-a','Assessment','A','Penilaian klinis…', enc.soap.A)}
-      ${soapField('e-p','Plan','P','Rencana tatalaksana…',    enc.soap.P)}
+      ${canSubjective ? soapField('e-s','Subjective','S','Cerita pasien…',    enc.soap.S) : ''}
+      ${canObjective ? soapField('e-o','Objective','O','Pemeriksaan fisik…', enc.soap.O) : ''}
+      ${canAssessmentPlan ? soapField('e-a','Assessment','A','Penilaian klinis…', enc.soap.A) : ''}
+      ${canAssessmentPlan ? soapField('e-p','Plan','P','Rencana tatalaksana…',    enc.soap.P) : ''}
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
       <button class="btn btn-ghost" onclick="closeModal()">Batal</button>
@@ -1826,10 +2075,15 @@ function showAddSoapForm() {
     showToast('Pilih pasien terlebih dahulu.', 'err');
     return;
   }
+  const role = State.doctor?.role || 'Dokter';
+  const canProblem = role === 'Dokter';
+  const canSubjective = role === 'Dokter';
+  const canObjective = role === 'Dokter' || role === 'Perawat';
+  const canAssessmentPlan = role === 'Dokter';
 
   openModal(`Catatan Pemeriksaan Baru — ${State.currentPatient.name}`, `
     <div class="val-box" id="vb-new"></div>
-    <div class="field">
+    ${canProblem ? `<div class="field">
       <label>Keluhan Utama</label>
       <textarea id="n-kel" placeholder="Deskripsikan keluhan pasien…"></textarea>
     </div>
@@ -1837,14 +2091,14 @@ function showAddSoapForm() {
       <label>Diagnosa / Problem List <span class="req">*</span></label>
       <textarea id="n-diag" placeholder="Diagnosa atau daftar masalah…"></textarea>
       <div class="f-msg" id="ne-diag"></div>
-    </div>
+    </div>` : ''}
     <div class="form-section-label">Catatan SOAP <span style="font-weight:400;text-transform:none;letter-spacing:0;">(isi minimal satu)</span></div>
     <div class="f-msg" id="ne-soap" style="margin-bottom:8px;"></div>
     <div class="grid-2">
-      ${soapField('n-s','Subjective','S','Cerita pasien, riwayat keluhan…')}
-      ${soapField('n-o','Objective','O','TTV, hasil pemeriksaan fisik…')}
-      ${soapField('n-a','Assessment','A','Penilaian klinis dokter…')}
-      ${soapField('n-p','Plan','P','Rencana tatalaksana, resep, rujukan…')}
+      ${canSubjective ? soapField('n-s','Subjective','S','Cerita pasien, riwayat keluhan…') : ''}
+      ${canObjective ? soapField('n-o','Objective','O','TTV, hasil pemeriksaan fisik…') : ''}
+      ${canAssessmentPlan ? soapField('n-a','Assessment','A','Penilaian klinis dokter…') : ''}
+      ${canAssessmentPlan ? soapField('n-p','Plan','P','Rencana tatalaksana, resep, rujukan…') : ''}
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:8px;">
       <button class="btn btn-ghost" onclick="closeModal()">Batal</button>
@@ -1898,7 +2152,7 @@ function validatePatientData(data) {
    validateSoapData() — wrapper Controller ke Service
 ------------------------------------------------------------------ */
 function validateSoapData(data) {
-  return Service.validateSoapData(data);
+  return Service.validateSoapData(data, State.doctor?.role || 'Dokter');
 }
 
 /* ===================================================================
@@ -2494,9 +2748,26 @@ const Admin_Module = {
  */
 function navigateTo(page) {
   const mainEl  = document.getElementById('app-main');
+  const diagEl  = document.getElementById('page-diag-reports');
   const adminEl = document.getElementById('page-admin');
   const navDash = document.getElementById('nav-dashboard');
+  const navDiag = document.getElementById('nav-diag');
   const navAdm  = document.getElementById('nav-admin');
+
+  if (page === 'diag-reports') {
+    if (!Auth_Module.canAccess('view_diag_reports')) {
+      showToast('Akses ditolak. Hanya Dokter dan Perawat yang dapat mengakses halaman ini.', 'err');
+      return;
+    }
+    mainEl.classList.add('hidden');
+    if (diagEl) diagEl.classList.remove('hidden');
+    adminEl.classList.add('hidden');
+    navDash.classList.remove('active');
+    if (navDiag) navDiag.classList.add('active');
+    navAdm.classList.remove('active');
+    renderDiagReportsPage();
+    return;
+  }
 
   if (page === 'admin') {
     if (!Auth_Module.canAccess('manage_users')) {
@@ -2504,14 +2775,18 @@ function navigateTo(page) {
       return;
     }
     mainEl.classList.add('hidden');
+    if (diagEl) diagEl.classList.add('hidden');
     adminEl.classList.remove('hidden');
     navDash.classList.remove('active');
+    if (navDiag) navDiag.classList.remove('active');
     navAdm.classList.add('active');
     renderAdminPage();
   } else {
     mainEl.classList.remove('hidden');
+    if (diagEl) diagEl.classList.add('hidden');
     adminEl.classList.add('hidden');
     navDash.classList.add('active');
+    if (navDiag) navDiag.classList.remove('active');
     navAdm.classList.remove('active');
     renderDashboard();
   }
@@ -2584,6 +2859,294 @@ function renderAdminPage() {
           </tr>`).join('')}
       </tbody>
     </table>`;
+}
+
+function renderEncounterReports(encounterId) {
+  const reports = Service.getReportsByEncounter(encounterId);
+  if (!reports.length) return '';
+  return `
+    <div style="margin-top:12px; padding-top:12px; border-top:1px dashed var(--border);">
+      <div class="text-xs bold text-muted" style="margin-bottom:8px;">Laporan Diagnostik Terkait</div>
+      <div style="display:grid;gap:8px;">
+        ${reports.map(report => `
+          <button class="btn btn-ghost btn-sm" style="justify-content:space-between;width:100%;" onclick="openReportDetail('${report.reportId}')">
+            <span>${esc(report.type === 'lab' ? (report.labData?.testName || 'Lab') : (report.imagingData?.modality || 'Radiologi'))}</span>
+            <span class="badge ${report.status === 'final' ? 'b-green' : report.status === 'amended' ? 'b-blue' : 'b-amber'}">${esc(report.status)}</span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+}
+
+function renderReportListItem(report, active = false) {
+  const title = report.type === 'lab'
+    ? (report.labData?.testName || 'Lab')
+    : (report.imagingData?.modality || 'Radiologi');
+  const badgeClass = report.status === 'final' ? 'b-green' : report.status === 'amended' ? 'b-blue' : 'b-amber';
+  return `
+    <button class="btn ${active ? 'btn-primary' : 'btn-ghost'} w-full" style="justify-content:space-between;margin-bottom:8px;" onclick="openReportDetail('${report.reportId}')">
+      <span style="text-align:left;">
+        <div class="bold">${esc(title)}</div>
+        <div class="text-xs text-muted">${esc(report.date || '')}</div>
+      </span>
+      <span class="badge ${badgeClass}">${esc(report.status)}</span>
+    </button>`;
+}
+
+function renderDiagReportDetail(report) {
+  const patient = Service.getPatientById(report.patientId);
+  const encounter = report.encounterId ? Service.getEncounterById(report.encounterId) : null;
+  const statusClass = report.status === 'final' ? 'b-green' : report.status === 'amended' ? 'b-blue' : 'b-amber';
+  const title = report.type === 'lab' ? report.labData?.testName : report.imagingData?.modality;
+  const body = report.type === 'lab'
+    ? `<div class="demo-grid">
+        <div class="demo-item"><div class="demo-label">Nama Tes</div><div class="demo-val">${esc(report.labData?.testName || '-')}</div></div>
+        <div class="demo-item"><div class="demo-label">Tanggal</div><div class="demo-val">${esc(report.date || '-')}</div></div>
+        <div class="demo-item full"><div class="demo-label">Hasil</div><div class="demo-val">${esc(report.labData?.results?.[0]?.paramName || '-')}: ${esc(report.labData?.results?.[0]?.value || '-')} ${esc(report.labData?.results?.[0]?.unit || '')} <span class="text-muted">(${esc(report.labData?.results?.[0]?.referenceRange || '-')})</span></div></div>
+      </div>`
+    : `<div class="demo-grid">
+        <div class="demo-item"><div class="demo-label">Modality</div><div class="demo-val">${esc(report.imagingData?.modality || '-')}</div></div>
+        <div class="demo-item"><div class="demo-label">Tanggal</div><div class="demo-val">${esc(report.date || '-')}</div></div>
+        <div class="demo-item full"><div class="demo-label">Temuan</div><div class="demo-val">${esc(report.imagingData?.findings || '-')}</div></div>
+      </div>`;
+
+  return `
+    <div class="val-box" style="display:block;margin-bottom:12px;">
+      <strong>${esc(title || 'Laporan')}</strong>
+      <div class="text-xs text-muted">${patient ? esc(patient.name) : '-'}${encounter ? ` · Encounter ${esc(encounter.id || encounter.encounterId || '')}` : ''}</div>
+    </div>
+    <div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+      <span class="badge ${statusClass}">${esc(report.status)}</span>
+      <span class="badge b-gray">${esc(report.type)}</span>
+      <span class="badge b-gray">${esc(report.date || '')}</span>
+    </div>
+    ${body}
+    <div class="field" style="margin-top:12px;">
+      <label>Interpretasi</label>
+      <div class="demo-val">${esc(report.interpretation || '-')}</div>
+    </div>
+    <div class="field">
+      <label>Encounter</label>
+      <div class="demo-val">${encounter ? esc(encounter.id || encounter.encounterId || '-') : 'Standalone'}</div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;">
+      ${Auth_Module.canAccess('edit_diag_reports') && report.status === 'pending' ? `<button class="btn btn-green btn-sm" onclick="changeReportStatus('${report.reportId}', 'final')">Ubah Status ke Final</button>` : ''}
+      ${Auth_Module.canAccess('edit_diag_reports') ? `<button class="btn btn-amber btn-sm" onclick="openReportForm('${report.type}', '${report.encounterId || ''}', '${report.reportId}')">Edit</button>` : ''}
+    </div>`;
+}
+
+function renderDiagReportsPage() {
+  const main = document.getElementById('page-diag-reports');
+  if (!main) return;
+
+  const patientId = State.currentPatient?.id || '';
+  const patientName = State.currentPatient?.name || 'semua pasien';
+  const allReports = patientId ? Service.getReportsByPatient(patientId) : Service.getAllReports();
+  const filtered = allReports.filter(report => report.type === State.diagTab);
+  const selected = State.currentDiagId ? Service.getReportById(State.currentDiagId) : filtered[0] || allReports[0] || null;
+  if (selected && !State.currentDiagId) State.currentDiagId = selected.reportId;
+
+  main.innerHTML = `
+    <div class="pg-head anim-up">
+      <div>
+        <div class="pg-title">Diagnostic Reports</div>
+        <div class="pg-sub">Menampilkan laporan untuk ${esc(patientName)}.</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn ${State.diagTab === 'lab' ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="setDiagTab('lab')">Laboratorium</button>
+        <button class="btn ${State.diagTab === 'imaging' ? 'btn-primary' : 'btn-ghost'} btn-sm" onclick="setDiagTab('imaging')">Radiologi</button>
+        ${Auth_Module.canAccess('edit_diag_reports') ? `<button class="btn btn-green btn-sm" onclick="openReportForm('${State.diagTab}', null)">+ Tambah Laporan</button>` : ''}
+      </div>
+    </div>
+
+    <div class="layout-2col anim-up" style="animation-delay:.05s">
+      <div class="card" style="align-self:start;">
+        <div class="card-head">
+          <div class="card-title">
+            <div class="card-icon gray">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+            </div>
+            Daftar ${State.diagTab === 'lab' ? 'Laboratorium' : 'Radiologi'}
+          </div>
+          <span class="badge b-gray">${filtered.length} laporan</span>
+        </div>
+        <div class="card-body" style="padding-bottom:8px;">
+          ${filtered.length === 0 ? '<div class="empty-state">Belum ada laporan untuk filter ini.</div>' : filtered.map(report => renderReportListItem(report, selected?.reportId === report.reportId)).join('')}
+        </div>
+      </div>
+
+      <div class="card" style="align-self:start;">
+        <div class="card-head">
+          <div class="card-title">
+            <div class="card-icon">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12h6M9 16h6M10 4h4l6 6v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"/></svg>
+            </div>
+            Detail Laporan
+          </div>
+        </div>
+        <div class="card-body" id="diag-detail-wrap">
+          ${selected ? renderDiagReportDetail(selected) : '<div class="empty-state">Pilih laporan untuk melihat detail.</div>'}
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function setDiagTab(tab) {
+  State.diagTab = tab;
+  State.currentDiagId = null;
+  renderDiagReportsPage();
+}
+
+function openReportDetail(reportId) {
+  State.currentDiagId = reportId;
+  renderDiagReportsPage();
+}
+
+function changeReportStatus(reportId, status) {
+  const report = Service.updateStatus(reportId, status);
+  if (!report) {
+    showToast('Laporan tidak ditemukan.', 'err');
+    return;
+  }
+  showToast(`✓ Status laporan menjadi ${report.status}.`, 'ok');
+  renderDiagReportsPage();
+}
+
+function openReportForm(type, encounterId = null, reportId = null) {
+  if (!Auth_Module.canAccess('edit_diag_reports')) {
+    showToast('Akses ditolak.', 'err');
+    return;
+  }
+  if (!State.currentPatient) {
+    showToast('Pilih pasien terlebih dahulu.', 'err');
+    return;
+  }
+  const existing = reportId ? Service.getReportById(reportId) : null;
+  const mode = existing ? 'Edit' : 'Tambah';
+  const title = `${mode} ${type === 'lab' ? 'Hasil Lab' : 'Hasil Radiologi'}`;
+  const body = type === 'lab'
+    ? reportFormLab(existing, encounterId)
+    : reportFormImaging(existing, encounterId);
+  openModal(title, body);
+}
+
+function reportFormLab(report, encounterId) {
+  const lab = report?.labData || { testName:'', results:[{ paramName:'', value:'', unit:'', referenceRange:'' }] };
+  const result = lab.results?.[0] || { paramName:'', value:'', unit:'', referenceRange:'' };
+  return `
+    <div class="val-box" id="rf-box" style="display:none;"></div>
+    <div class="grid-2">
+      <div class="field"><label>Nama Tes <span class="req">*</span></label><input id="rf-test" value="${esc(lab.testName || '')}"><div class="f-msg" id="rf-test-err"></div></div>
+      <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="rf-date" value="${esc(report?.date || '')}"><div class="f-msg" id="rf-date-err"></div></div>
+      <div class="field"><label>Nama Parameter <span class="req">*</span></label><input id="rf-param" value="${esc(result.paramName || '')}"><div class="f-msg" id="rf-param-err"></div></div>
+      <div class="field"><label>Nilai Hasil <span class="req">*</span></label><input id="rf-value" value="${esc(result.value || '')}"><div class="f-msg" id="rf-value-err"></div></div>
+      <div class="field"><label>Satuan <span class="req">*</span></label><input id="rf-unit" value="${esc(result.unit || '')}"><div class="f-msg" id="rf-unit-err"></div></div>
+      <div class="field"><label>Nilai Referensi <span class="req">*</span></label><input id="rf-ref" value="${esc(result.referenceRange || '')}"><div class="f-msg" id="rf-ref-err"></div></div>
+    </div>
+    <div class="field"><label>Interpretasi</label><textarea id="rf-int">${esc(report?.interpretation || '')}</textarea></div>
+    <div class="field"><label>Encounter ID (opsional)</label><input id="rf-enc" value="${esc(encounterId || report?.encounterId || '')}" placeholder="Kosongkan jika standalone"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" onclick="submitReportForm('lab', '${esc(report?.reportId || '')}')">Simpan</button>
+    </div>`;
+}
+
+function reportFormImaging(report, encounterId) {
+  const imaging = report?.imagingData || { modality:'', bodyPart:'', findings:'', impression:'' };
+  return `
+    <div class="val-box" id="rf-box" style="display:none;"></div>
+    <div class="grid-2">
+      <div class="field"><label>Jenis Pemeriksaan <span class="req">*</span></label>
+        <select id="ri-mod"><option value="">-- Pilih --</option>${['X-Ray','USG','CT Scan','MRI'].map(v => `<option value="${v}" ${imaging.modality===v ? 'selected' : ''}>${v}</option>`).join('')}</select>
+        <div class="f-msg" id="ri-mod-err"></div>
+      </div>
+      <div class="field"><label>Tanggal <span class="req">*</span></label><input type="date" id="ri-date" value="${esc(report?.date || '')}"><div class="f-msg" id="ri-date-err"></div></div>
+      <div class="field"><label>Bagian Tubuh</label><input id="ri-body" value="${esc(imaging.bodyPart || '')}"></div>
+      <div class="field"><label>Kesan</label><input id="ri-imp" value="${esc(imaging.impression || '')}"></div>
+    </div>
+    <div class="field"><label>Temuan / Findings <span class="req">*</span></label><textarea id="ri-find">${esc(imaging.findings || '')}</textarea><div class="f-msg" id="ri-find-err"></div></div>
+    <div class="field"><label>Interpretasi</label><textarea id="ri-int">${esc(report?.interpretation || '')}</textarea></div>
+    <div class="field"><label>Encounter ID (opsional)</label><input id="ri-enc" value="${esc(encounterId || report?.encounterId || '')}" placeholder="Kosongkan jika standalone"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-ghost" onclick="closeModal()">Batal</button>
+      <button class="btn btn-primary" onclick="submitReportForm('imaging', '${esc(report?.reportId || '')}')">Simpan</button>
+    </div>`;
+}
+
+function submitReportForm(type, reportId = '') {
+  const data = {
+    patientId: State.currentPatient?.id || '',
+    encounterId: val(type === 'lab' ? 'rf-enc' : 'ri-enc') || null,
+    type,
+    date: val(type === 'lab' ? 'rf-date' : 'ri-date'),
+    status: reportId ? (Service.getReportById(reportId)?.status || 'pending') : 'pending',
+    interpretation: val(type === 'lab' ? 'rf-int' : 'ri-int'),
+  };
+
+  if (type === 'lab') {
+    data.labData = {
+      testName: val('rf-test'),
+      results: [{
+        paramName: val('rf-param'),
+        value: val('rf-value'),
+        unit: val('rf-unit'),
+        referenceRange: val('rf-ref'),
+        referenceMin: null,
+        referenceMax: null,
+        flag: null,
+      }],
+    };
+  } else {
+    data.imagingData = {
+      modality: val('ri-mod'),
+      bodyPart: val('ri-body'),
+      findings: val('ri-find'),
+      impression: val('ri-imp'),
+    };
+  }
+
+  const validation = Service.validateReport(data);
+  if (!validation.valid) {
+    const errs = validation.errors;
+    Object.entries(errs).forEach(([key, msg]) => {
+      const map = {
+        date: type === 'lab' ? 'rf-date-err' : 'ri-date-err',
+        testName: 'rf-test-err',
+        paramName: 'rf-param-err',
+        value: 'rf-value-err',
+        unit: 'rf-unit-err',
+        referenceRange: 'rf-ref-err',
+        modality: 'ri-mod-err',
+        findings: 'ri-find-err',
+      };
+      const el = map[key] ? document.getElementById(map[key]) : null;
+      if (el) el.textContent = msg;
+    });
+    const vb = document.getElementById('rf-box');
+    if (vb) {
+      vb.style.display = 'block';
+      vb.innerHTML = '<strong>Mohon perbaiki:</strong><ul>' + Object.values(errs).map(v => `<li>${v}</li>`).join('') + '</ul>';
+    }
+    return;
+  }
+
+  let result;
+  if (reportId) {
+    result = Service.updateReport(reportId, data);
+    if (result && result.status === 'final') result = Service.updateReport(reportId, data);
+  } else {
+    result = Service.addReport(data);
+  }
+
+  if (result.errors) {
+    showToast('Validasi laporan gagal.', 'err');
+    return;
+  }
+
+  closeModal();
+  State.currentDiagId = result.report?.reportId || reportId || null;
+  showToast('✓ Laporan diagnostik berhasil disimpan.', 'ok');
+  renderDiagReportsPage();
 }
 
 /**
@@ -2696,6 +3259,9 @@ function deactivateUser(userId, name) {
 document.addEventListener('DOMContentLoaded', () => {
   // Inisialisasi akun demo jika mc_users kosong
   seedDemoUsers();
+
+  // Cek autentikasi: redirect ke login jika tidak ada sesi aktif
+  Auth_Module.requireAuth();
 
   // Enter key di field password → login
   document.getElementById('inp-pwd').addEventListener('keydown', e => {

@@ -1,0 +1,49 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam packageStyle rectangle
+
+package "Presentation" {
+  [LoginPage]
+  [AppShell]
+  [PatientPanel]
+  [DiagReportPanel]
+  [AdminPanel]
+}
+
+package "Business Logic" {
+  [Auth_Module]
+  [Patient_Module]
+  [Clinical_Module]
+  [DiagReport_Module]
+  [Admin_Module]
+}
+
+package "Data" {
+  [localStorage]
+  [sessionStorage]
+}
+
+package "Security" {
+  [RBAC Policy]
+}
+
+[LoginPage] --> [Auth_Module]
+[AppShell] --> [Auth_Module]
+[AppShell] --> [Patient_Module]
+[AppShell] --> [Clinical_Module]
+[AppShell] --> [DiagReport_Module]
+[AppShell] --> [Admin_Module]
+[AppShell] --> [RBAC Policy]
+
+[Auth_Module] --> [sessionStorage]
+[Auth_Module] --> [RBAC Policy]
+[Patient_Module] --> [localStorage]
+[Clinical_Module] --> [localStorage]
+[Clinical_Module] --> [Patient_Module]
+[Clinical_Module] --> [DiagReport_Module]
+[DiagReport_Module] --> [localStorage]
+[Admin_Module] --> [localStorage]
+[Admin_Module] --> [Auth_Module]
+
+@enduml

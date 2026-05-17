@@ -1,0 +1,15 @@
+@startuml
+top to bottom direction
+skinparam shadowing false
+skinparam defaultTextAlignment center
+
+rectangle "UI_Layer" as UI #DFF3DF
+rectangle "Core_Domain" as CORE #DFF3DF
+rectangle "Security_Auth" as SEC #DFF3DF
+rectangle "HL7_Connector" as HL7 #DFF3DF
+
+UI -down-> CORE
+SEC -right-> CORE
+CORE -right-> HL7
+
+@enduml

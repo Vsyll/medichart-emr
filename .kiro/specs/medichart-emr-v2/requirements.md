@@ -222,6 +222,8 @@ Sistem ini digunakan di lingkungan klinis oleh tiga peran utama: Dokter, Perawat
 1. THE Doc_Module SHALL menghasilkan file `docs/package-diagram.puml` yang valid secara sintaks PlantUML.
 2. THE Doc_Module SHALL mengelompokkan komponen ke dalam paket-paket logis: `Presentation`, `Business Logic`, `Data`, dan `Security`.
 3. THE Doc_Module SHALL menggambarkan dependensi antar paket dengan arah yang benar.
+4. THE Doc_Module SHALL menyediakan versi sederhana (simple) pada `docs/package-diagram.puml` dengan koneksi garis lurus tanpa lintasan berputar untuk kebutuhan presentasi cepat.
+5. THE Doc_Module SHALL menyediakan versi detail (non-simple) pada `docs/package-diagram-detailed.puml` yang menampilkan dependensi paket/modul lebih lengkap.
 
 ---
 
@@ -249,6 +251,8 @@ Sistem ini digunakan di lingkungan klinis oleh tiga peran utama: Dokter, Perawat
 3. THE Doc_Module SHALL mendeskripsikan setiap fitur utama (RBAC, Diagnostic Reports, Clinical Notes) dalam bagian yang terpisah.
 4. THE Doc_Module SHALL menyertakan tabel perbandingan fitur antara MediChart v0 dan MediChart v2.
 5. THE Doc_Module SHALL ditulis dalam Bahasa Indonesia.
+6. THE Doc_Module SHALL menghasilkan template laporan formal berbasis LaTeX pada file `docs/laporan.tex`.
+7. THE Doc_Module SHALL menghasilkan template laporan bergaya dokumen kantor (ODT/Word-ready) pada file `docs/template-laporan-odt.md`.
 
 ---
 
@@ -262,6 +266,7 @@ Sistem ini digunakan di lingkungan klinis oleh tiga peran utama: Dokter, Perawat
 2. THE Doc_Module SHALL mencantumkan semua akun demo beserta username, password, dan perannya dalam tabel yang terformat.
 3. THE Doc_Module SHALL menyertakan bagian "Changelog" yang mencatat perbedaan antara v0 dan v2.
 4. THE Doc_Module SHALL ditulis dalam Bahasa Indonesia.
+5. THE Doc_Module SHALL menyertakan lampiran source PlantUML pada `README.md` untuk memudahkan copy-paste ke laporan formal.
 
 ---
 

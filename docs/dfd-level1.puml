@@ -1,0 +1,52 @@
+@startuml
+left to right direction
+skinparam shadowing false
+
+actor Dokter
+actor Perawat
+actor Admin
+
+rectangle "1.0 Autentikasi" as P1
+rectangle "2.0 Manajemen Pasien" as P2
+rectangle "3.0 Catatan Klinis" as P3
+rectangle "4.0 Diagnostic Reports" as P4
+rectangle "5.0 Administrasi" as P5
+
+database "D1 User Store" as DUser
+database "D2 Session Store" as DSession
+database "D3 Patient Store" as DPatient
+database "D4 Encounter Store" as DEncounter
+database "D5 Clinical Note Store" as DNote
+database "D6 Problem Store" as DProblem
+database "D7 Diagnostic Report Store" as DReport
+
+Dokter --> P1 : username/password
+Perawat --> P1 : username/password
+Admin --> P1 : username/password
+P1 --> Dokter : status login / peran
+P1 --> Perawat : status login / peran
+P1 --> Admin : status login / peran
+P1 --> DUser : baca akun
+P1 --> DSession : simpan sesi
+
+Dokter --> P2 : cari/tambah/edit pasien
+Perawat --> P2 : lihat data pasien
+Admin --> P2 : tambah/edit pasien
+P2 --> DPatient : baca/tulis data pasien
+
+Dokter --> P3 : SOAP, Problem List, Encounter
+Perawat --> P3 : input vital signs
+P3 --> DEncounter : baca/tulis encounter
+P3 --> DNote : baca/tulis clinical note
+P3 --> DProblem : baca/tulis problem
+
+Dokter --> P4 : input/lihat hasil lab & radiologi
+Perawat --> P4 : lihat hasil diagnostik
+P4 --> DReport : baca/tulis laporan diagnostik
+P4 --> DEncounter : kaitkan encounter
+P4 --> DPatient : kaitkan pasien
+
+Admin --> P5 : kelola akun pengguna
+P5 --> DUser : baca/tulis akun pengguna
+
+@enduml

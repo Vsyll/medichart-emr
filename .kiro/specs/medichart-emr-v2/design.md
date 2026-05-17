@@ -18,6 +18,7 @@ Sistem berjalan sepenuhnya di browser (client-side only), menggunakan `localStor
 - Menambahkan modul Diagnostic Reports (Lab & Imaging) yang terintegrasi dengan Encounter
 - Menghasilkan dokumentasi teknis yang komprehensif
 - Mempertahankan desain visual yang konsisten dengan v0
+- Menyediakan keluaran dokumentasi siap laporan formal (LaTeX dan template ODT/Word)
 
 ---
 
@@ -91,6 +92,26 @@ Session data disimpan di `sessionStorage`:
 | Key sessionStorage | Isi |
 |---|---|
 | `mc_session` | Object `{ userId, username, name, role, loginAt }` |
+
+### Strategi Package Diagram
+
+Untuk memenuhi kebutuhan presentasi dan kebutuhan teknis sekaligus, desain menyediakan dua tingkat package diagram:
+
+1. **Simple package diagram** di `docs/package-diagram.puml`
+  - Menampilkan empat blok utama: `UI_Layer`, `Core_Domain`, `Security_Auth`, `HL7_Connector`
+  - Menggunakan koneksi garis lurus agar mudah dibaca cepat (gaya helicopter view)
+2. **Detailed package diagram** di `docs/package-diagram-detailed.puml`
+  - Menampilkan paket `Presentation`, `Business Logic`, `Data`, `Security`
+  - Menjelaskan dependensi antar modul secara lebih rinci untuk analisis teknis
+
+### Strategi Dokumentasi Formal
+
+Untuk kebutuhan pengumpulan akademik, dokumentasi disiapkan dalam beberapa format:
+
+1. `docs/laporan.md` sebagai laporan naratif utama (Markdown)
+2. `docs/laporan.tex` sebagai template LaTeX siap kompilasi
+3. `docs/template-laporan-odt.md` sebagai struktur siap salin ke Word/ODT
+4. `README.md` memuat lampiran source PlantUML agar proses penyusunan lampiran laporan lebih cepat
 
 ---
 

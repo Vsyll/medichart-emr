@@ -1,0 +1,101 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[indonesian]{babel}
+\usepackage{geometry}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{xcolor}
+
+\geometry{margin=2.5cm}
+
+\definecolor{codebg}{RGB}{247,247,247}
+\lstdefinestyle{pumlstyle}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  breaklines=true,
+  columns=fullflexible
+}
+
+\title{Laporan Desain Sistem MediChart EMR v2}
+\author{Tim Pengembang MediChart}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Pendahuluan}
+MediChart EMR v2 merupakan pengembangan lanjutan sistem rekam medis berbasis web single-page.
+Fokus utama versi ini mencakup Role-Based Access Control (RBAC), Diagnostic Reports,
+dan dokumentasi teknis yang komprehensif.
+
+\section{Deskripsi Sistem}
+Sistem berjalan sepenuhnya pada browser dengan penyimpanan data menggunakan localStorage
+dan sessionStorage. Tidak ada backend server pada implementasi ini.
+
+\section{Arsitektur Sistem}
+Arsitektur dibagi menjadi lapisan presentasi, logika bisnis, data, dan keamanan.
+Ringkasan diagram tersedia pada berkas:
+
+\begin{itemize}[leftmargin=1.2cm]
+  \item docs/component-diagram.puml
+  \item docs/package-diagram.puml
+  \item docs/package-diagram-detailed.puml
+\end{itemize}
+
+\section{Desain Antarmuka}
+Antarmuka terdiri dari halaman login, app shell, panel pasien, panel laporan diagnostik,
+dan panel administrasi sesuai hak akses peran.
+
+\section{Desain Data}
+Entitas utama mencakup User, Patient, Encounter, ClinicalNote, Problem,
+dan DiagnosticReport.
+
+\section{Desain Keamanan}
+Keamanan sistem mencakup autentikasi, otorisasi berbasis role, validasi form,
+dan pembatasan akses komponen UI sesuai peran.
+
+\section{Perbandingan Fitur v0 dan v2}
+\begin{longtable}{|p{4cm}|p{4.5cm}|p{5.5cm}|}
+\hline
+\textbf{Aspek} & \textbf{MediChart v0} & \textbf{MediChart v2} \\
+\hline
+Autentikasi & Belum ada RBAC & Login, sesi, dan role-based access \\
+\hline
+Peran pengguna & Satu aktor dokter & Dokter, Perawat, Admin \\
+\hline
+Data klinis & SOAP dan Problem List dasar & SOAP, Problem List, Encounter, Diagnostic Reports \\
+\hline
+Manajemen pengguna & Tidak ada & Tersedia untuk Admin \\
+\hline
+Dokumentasi & Diagram dasar & UML/DFD diperbarui + laporan formal \\
+\hline
+\end{longtable}
+
+\section{Lampiran Source PlantUML}
+Contoh lampiran source PlantUML (lengkap ada di README):
+
+\begin{lstlisting}[style=pumlstyle]
+@startuml
+top to bottom direction
+rectangle "UI_Layer" as UI
+rectangle "Core_Domain" as CORE
+rectangle "Security_Auth" as SEC
+rectangle "HL7_Connector" as HL7
+UI -down-> CORE
+SEC -right-> CORE
+CORE -right-> HL7
+@enduml
+\end{lstlisting}
+
+\section{Kesimpulan}
+MediChart EMR v2 berhasil memperluas fungsi klinis, meningkatkan kontrol akses,
+dan menyediakan dokumentasi siap presentasi maupun laporan formal.
+
+\end{document}

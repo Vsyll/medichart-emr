@@ -1,49 +1,76 @@
 @startuml
 left to right direction
 skinparam packageStyle rectangle
+skinparam shadowing false
 
 actor Dokter
+actor Perawat
+actor Admin
 
 rectangle "Sistem Catatan Pemeriksaan Dokter" {
+  usecase "Login" as UC_Login
+  usecase "Lihat Dashboard Pasien" as UC_Dashboard
+  usecase "Lihat Daftar Pasien" as UC_List
+  usecase "Cari Data Pasien" as UC_Search
+  usecase "Tambah Pasien Baru" as UC_AddPatient
+  usecase "Edit Data Pasien" as UC_EditPatient
 
-  usecase "Login" as UC1
-  usecase "Lihat Dashboard Pasien" as UC2
-  usecase "Lihat Daftar Pasien" as UC3
-  usecase "Cari Data Pasien" as UC4
-  usecase "Tambah Pasien Baru" as UC5
+  usecase "Lihat Data Demographics" as UC_Demographics
+  usecase "Lihat Riwayat SOAP" as UC_SoapHistory
 
-  usecase "Lihat Data Demographics" as UC6
-  usecase "Lihat Riwayat SOAP" as UC7
+  usecase "Input Keluhan Pasien" as UC_Complaint
+  usecase "Input Diagnosa\nProblem List" as UC_ProblemList
+  usecase "Input Catatan Klinis\nSOAP" as UC_Soap
+  usecase "Simpan Catatan Pemeriksaan" as UC_SaveExam
+  usecase "Edit Catatan Pemeriksaan" as UC_EditExam
+  usecase "Input Tanda Vital" as UC_Vitals
 
-  usecase "Input Keluhan Pasien" as UC8
-  usecase "Input Diagnosa\nProblem List" as UC9
-  usecase "Input Catatan Klinis\nSOAP" as UC10
+  usecase "Lihat Diagnostic Reports" as UC_ViewDiag
+  usecase "Input Hasil Lab" as UC_InputLab
+  usecase "Input Hasil Radiologi" as UC_InputImaging
 
-  usecase "Simpan Catatan Pemeriksaan" as UC11
-  usecase "Edit Catatan Pemeriksaan" as UC12
+  usecase "Kelola Akun Pengguna" as UC_ManageUsers
 }
 
-Dokter --> UC1
-Dokter --> UC2
-Dokter --> UC4
-Dokter --> UC5
-Dokter --> UC6
-Dokter --> UC7
-Dokter --> UC8
-Dokter --> UC9
-Dokter --> UC10
-Dokter --> UC11
-Dokter --> UC12
+Dokter --> UC_Login
+Dokter --> UC_Dashboard
+Dokter --> UC_Search
+Dokter --> UC_AddPatient
+Dokter --> UC_EditPatient
+Dokter --> UC_Demographics
+Dokter --> UC_SoapHistory
+Dokter --> UC_Complaint
+Dokter --> UC_ProblemList
+Dokter --> UC_Soap
+Dokter --> UC_SaveExam
+Dokter --> UC_EditExam
+Dokter --> UC_ViewDiag
+Dokter --> UC_InputLab
+Dokter --> UC_InputImaging
 
-UC2 ..> UC3 : <<include>>
-UC4 ..> UC3 : <<include>>
+Perawat --> UC_Login
+Perawat --> UC_Dashboard
+Perawat --> UC_List
+Perawat --> UC_Search
+Perawat --> UC_Demographics
+Perawat --> UC_SoapHistory
+Perawat --> UC_Vitals
+Perawat --> UC_ViewDiag
 
-UC5 ..> UC6 : <<include>>
+Admin --> UC_Login
+Admin --> UC_Dashboard
+Admin --> UC_List
+Admin --> UC_Search
+Admin --> UC_AddPatient
+Admin --> UC_EditPatient
+Admin --> UC_ManageUsers
 
-UC11 ..> UC8 : <<include>>
-UC11 ..> UC9 : <<include>>
-UC11 ..> UC10 : <<include>>
-
-UC12 ..> UC10 : <<include>>
+UC_Dashboard ..> UC_List : <<include>>
+UC_Search ..> UC_List : <<include>>
+UC_AddPatient ..> UC_Demographics : <<include>>
+UC_SaveExam ..> UC_Complaint : <<include>>
+UC_SaveExam ..> UC_ProblemList : <<include>>
+UC_SaveExam ..> UC_Soap : <<include>>
+UC_EditExam ..> UC_Soap : <<include>>
 
 @enduml

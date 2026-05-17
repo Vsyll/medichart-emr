@@ -1,0 +1,32 @@
+@startuml
+left to right direction
+skinparam shadowing false
+skinparam componentStyle rectangle
+
+component "Presentation Layer" as Presentation
+component "Auth_Module" as Auth
+component "Patient_Module" as Patient
+component "Clinical_Module" as Clinical
+component "DiagReport_Module" as Diag
+component "Admin_Module" as Admin
+component "localStorage Store" as LocalStore
+component "sessionStorage Store" as SessionStore
+
+Presentation --> Auth
+Presentation --> Patient
+Presentation --> Clinical
+Presentation --> Diag
+Presentation --> Admin
+
+Clinical --> Patient : data pasien
+Clinical --> Diag : laporan terkait
+Diag --> Patient : relasi pasien
+Admin --> Auth : cek akses
+
+Auth --> SessionStore
+Patient --> LocalStore
+Clinical --> LocalStore
+Diag --> LocalStore
+Admin --> LocalStore
+
+@enduml

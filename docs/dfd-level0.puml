@@ -1,0 +1,20 @@
+@startuml
+left to right direction
+skinparam shadowing false
+
+actor Dokter
+actor Perawat
+actor Admin
+
+rectangle "0. Sistem MediChart EMR v2" as System
+
+Dokter --> System : kredensial login\npermintaan pasien\ncatatan klinis\nhasil diagnostik
+System --> Dokter : status login\ndata pasien\ndetail klinis\ndetail laporan
+
+Perawat --> System : kredensial login\npermintaan pasien\ninput tanda vital
+System --> Perawat : status login\ndata pasien\nriwayat SOAP\ndaftar laporan
+
+Admin --> System : kredensial login\nkelola pengguna\ndata pasien
+System --> Admin : status login\ndaftar akun\ndata pasien
+
+@enduml
