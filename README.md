@@ -1,3 +1,3 @@
 # medichart-emr
 
-![Sequence Diagram MediChart](images/sequence-diagram.png)
+![Sequence Diagram MediChart](assets/sequence-diagram.png)
