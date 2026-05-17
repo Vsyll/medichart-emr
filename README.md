@@ -5,5 +5,7 @@
 
 ## Class Diagram
 ![Class Diagram MediChart](assets/class-diagram.png)
+
 ## Use Case Diagram
 ![Use Case Diagram MediChart](assets/use-case-diagram.png)
+Halodunia
