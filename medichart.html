@@ -1427,6 +1427,18 @@ function updateNavForRole(role) {
 function logout() {
   Auth_Module.logout(); // hapus sesi dari sessionStorage + redirect ke login
   State.doctor = null; State.currentPatient = null; State.searchQuery = ''; State.diagTab = 'lab'; State.currentDiagId = null;
+
+  // Reset semua halaman ke kondisi awal
+  document.getElementById('app-main').classList.remove('hidden');
+  document.getElementById('page-diag-reports').classList.add('hidden');
+  document.getElementById('page-admin').classList.add('hidden');
+
+  // Reset nav active state
+  document.getElementById('nav-dashboard').classList.add('active');
+  document.getElementById('nav-admin').classList.remove('active');
+  const navDiag = document.getElementById('nav-diag');
+  if (navDiag) navDiag.classList.remove('active');
+
   document.getElementById('inp-usr').value = '';
   document.getElementById('inp-pwd').value = '';
   document.getElementById('l-err').style.display = 'none';
