@@ -7,33 +7,34 @@ actor Dokter
 actor Perawat
 actor Admin
 
-rectangle "Sistem Catatan Pemeriksaan Dokter" {
+rectangle "MediChart EMR" {
   usecase "Login" as UC_Login
-  usecase "Lihat Dashboard Pasien" as UC_Dashboard
+  usecase "Lihat Dashboard" as UC_Dashboard
+
   usecase "Lihat Daftar Pasien" as UC_List
   usecase "Cari Data Pasien" as UC_Search
   usecase "Tambah Pasien Baru" as UC_AddPatient
   usecase "Edit Data Pasien" as UC_EditPatient
-
   usecase "Lihat Data Demographics" as UC_Demographics
-  usecase "Lihat Riwayat SOAP" as UC_SoapHistory
 
+  usecase "Lihat Riwayat SOAP" as UC_SoapHistory
   usecase "Input Keluhan Pasien" as UC_Complaint
   usecase "Input Diagnosa\nProblem List" as UC_ProblemList
   usecase "Input Catatan Klinis\nSOAP" as UC_Soap
+  usecase "Input Objective /\nTanda Vital" as UC_Objective
   usecase "Simpan Catatan Pemeriksaan" as UC_SaveExam
   usecase "Edit Catatan Pemeriksaan" as UC_EditExam
-  usecase "Input Tanda Vital" as UC_Vitals
 
   usecase "Lihat Diagnostic Reports" as UC_ViewDiag
-  usecase "Input Hasil Lab" as UC_InputLab
-  usecase "Input Hasil Radiologi" as UC_InputImaging
+  usecase "Tambah Laporan Lab" as UC_InputLab
+  usecase "Tambah Laporan Radiologi" as UC_InputImaging
 
   usecase "Kelola Akun Pengguna" as UC_ManageUsers
 }
 
 Dokter --> UC_Login
 Dokter --> UC_Dashboard
+Dokter --> UC_List
 Dokter --> UC_Search
 Dokter --> UC_AddPatient
 Dokter --> UC_EditPatient
@@ -54,23 +55,25 @@ Perawat --> UC_List
 Perawat --> UC_Search
 Perawat --> UC_Demographics
 Perawat --> UC_SoapHistory
-Perawat --> UC_Vitals
+Perawat --> UC_Objective
 Perawat --> UC_ViewDiag
 
 Admin --> UC_Login
 Admin --> UC_Dashboard
-Admin --> UC_List
-Admin --> UC_Search
-Admin --> UC_AddPatient
-Admin --> UC_EditPatient
 Admin --> UC_ManageUsers
 
 UC_Dashboard ..> UC_List : <<include>>
 UC_Search ..> UC_List : <<include>>
 UC_AddPatient ..> UC_Demographics : <<include>>
+
 UC_SaveExam ..> UC_Complaint : <<include>>
 UC_SaveExam ..> UC_ProblemList : <<include>>
 UC_SaveExam ..> UC_Soap : <<include>>
+
+UC_Objective ..> UC_Soap : <<include>>
 UC_EditExam ..> UC_Soap : <<include>>
+
+UC_InputLab ..> UC_ViewDiag : <<include>>
+UC_InputImaging ..> UC_ViewDiag : <<include>>
 
 @enduml
