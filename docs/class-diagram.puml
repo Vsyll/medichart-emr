@@ -18,6 +18,13 @@ class Doctor {
   +doctorId: string
   +specialty: string
   +createClinicalNote()
+  +createDiagnosticReport()
+}
+
+class Nurse {
+  +nurseId: string
+  +department: string
+  +inputVitals()
 }
 
 class Patient {
@@ -31,6 +38,7 @@ class Patient {
   +allergies: string
   +getDemographics()
   +createPatient()
+  +updatePatient()
 }
 
 class Encounter {
@@ -68,6 +76,18 @@ class Problem {
   +updateStatus()
 }
 
+class VitalSign {
+  +vitalId: string
+  +encounterId: string
+  +bloodPressure: string
+  +heartRate: int
+  +temperature: float
+  +respiratoryRate: int
+  +recordedAt: string
+  +saveVitals()
+  +updateVitals()
+}
+
 class DiagnosticReport {
   +reportId: string
   +patientId: string
@@ -83,13 +103,19 @@ class DiagnosticReport {
 }
 
 User <|-- Doctor
+User <|-- Nurse
 
 Patient "1" -- "0..*" Encounter : memiliki
 Doctor "1" -- "0..*" Encounter : menangani
+
 Encounter "1" -- "0..1" ClinicalNote : menghasilkan
-Patient "1" -- "0..*" Problem : memiliki
+Encounter "1" -- "0..1" VitalSign : memiliki
 Encounter "1" -- "0..*" Problem : mencatat
-Patient "1" -- "0..*" DiagnosticReport : memiliki
 Encounter "0..1" -- "0..*" DiagnosticReport : terkait
+
+Patient "1" -- "0..*" Problem : memiliki
+Patient "1" -- "0..*" DiagnosticReport : memiliki
+
+Nurse "1" -- "0..*" VitalSign : mencatat
 
 @enduml
