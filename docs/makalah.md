@@ -1,6 +1,9 @@
-# Template Laporan ODT/Word - MediChart EMR v2
+# Makalah Proyek MediChart EMR v2
 
-Dokumen ini disusun agar isinya setara dengan `docs/makalah.md` dan dapat langsung ditempel ke LibreOffice Writer (ODT) atau Microsoft Word tanpa kehilangan konteks naratif.
+Dokumen ini disusun agar konsisten dengan dua acuan utama:
+
+1. Struktur laporan formal pada `docs/laporan.tex`
+2. Urutan bab template ODT/Word pada `docs/template-laporan-odt.md`
 
 ## Cover
 
@@ -13,7 +16,7 @@ Dokumen ini disusun agar isinya setara dengan `docs/makalah.md` dan dapat langsu
 
 ## Daftar Isi
 
-Gunakan fitur automatic table of contents dari Word/Writer berdasarkan Heading 1/2/3.
+Gunakan fitur daftar isi otomatis jika dokumen ini dipindahkan ke ODT/Word/PDF.
 
 ## 1. Pendahuluan
 

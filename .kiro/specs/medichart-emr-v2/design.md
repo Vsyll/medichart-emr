@@ -111,7 +111,8 @@ Untuk kebutuhan pengumpulan akademik, dokumentasi disiapkan dalam beberapa forma
 1. `docs/laporan.md` sebagai laporan naratif utama (Markdown)
 2. `docs/laporan.tex` sebagai template LaTeX siap kompilasi
 3. `docs/template-laporan-odt.md` sebagai struktur siap salin ke Word/ODT
-4. `README.md` memuat lampiran source PlantUML agar proses penyusunan lampiran laporan lebih cepat
+4. `docs/makalah.md` sebagai naskah laporan proyek menyeluruh dan deskriptif setara dokumen makalah akademik
+5. `README.md` memuat lampiran source PlantUML agar proses penyusunan lampiran laporan lebih cepat
 
 ---
 

@@ -300,6 +300,11 @@ Implementasi MediChart EMR v2 dilakukan secara inkremental dalam satu file `medi
     - Buat file `docs/template-laporan-odt.md` dengan struktur heading dan isi siap salin ke Word/ODT
     - _Requirements: 15.7_
 
+  - [x] 15.5 Buat makalah proyek menyeluruh
+    - Buat file `docs/makalah.md` dengan gaya laporan akademik yang lebih deskriptif dari `docs/laporan.md`
+    - Cakup konteks proyek secara keseluruhan (analisis, desain, implementasi, validasi, pembahasan, kesimpulan)
+    - _Requirements: 15.8_
+
 - [x] 16. Verifikasi akhir dan polish
   - [x] 16.1 Verifikasi konsistensi visual dan responsivitas
     - Pastikan semua elemen UI baru (tab, badge status, form lab/imaging) menggunakan design tokens yang sudah ada (warna, tipografi, border-radius)

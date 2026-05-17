@@ -253,6 +253,7 @@ Sistem ini digunakan di lingkungan klinis oleh tiga peran utama: Dokter, Perawat
 5. THE Doc_Module SHALL ditulis dalam Bahasa Indonesia.
 6. THE Doc_Module SHALL menghasilkan template laporan formal berbasis LaTeX pada file `docs/laporan.tex`.
 7. THE Doc_Module SHALL menghasilkan template laporan bergaya dokumen kantor (ODT/Word-ready) pada file `docs/template-laporan-odt.md`.
+8. THE Doc_Module SHALL menghasilkan file `docs/makalah.md` yang berisi laporan proyek menyeluruh dan deskriptif (bukan hanya ringkasan tim), mencakup konteks akademik, analisis kebutuhan, desain, implementasi, validasi, pembahasan, dan kesimpulan.
 
 ---
 

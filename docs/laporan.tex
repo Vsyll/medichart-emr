@@ -6,62 +6,145 @@
 \usepackage{longtable}
 \usepackage{hyperref}
 \usepackage{enumitem}
-\usepackage{listings}
-\usepackage{xcolor}
 
 \geometry{margin=2.5cm}
 
-\definecolor{codebg}{RGB}{247,247,247}
-\lstdefinestyle{pumlstyle}{
-  basicstyle=\ttfamily\small,
-  backgroundcolor=\color{codebg},
-  frame=single,
-  breaklines=true,
-  columns=fullflexible
-}
-
-\title{Laporan Desain Sistem MediChart EMR v2}
-\author{Tim Pengembang MediChart}
+\title{Makalah Proyek MediChart EMR v2}
+\author{Kelompok Proyek MediChart}
 \date{\today}
 
 \begin{document}
 
 \maketitle
+
+Dokumen ini disusun agar konsisten dengan dua acuan utama:
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Struktur laporan formal pada \texttt{docs/laporan.tex}
+  \item Urutan bab template ODT/Word pada \texttt{docs/template-laporan-odt.md}
+\end{enumerate}
+
+\section*{Cover}
+\addcontentsline{toc}{section}{Cover}
+\begin{itemize}[leftmargin=1.2cm]
+  \item Judul: Laporan Desain Sistem MediChart EMR v2
+  \item Mata Kuliah: Konsep Teknologi Informasi
+  \item Kelompok: [Isi Nama Kelompok]
+  \item Anggota: [Isi 5-7 Nama]
+  \item Dosen: [Isi Nama Dosen]
+  \item Tanggal: [Isi Tanggal]
+\end{itemize}
+
 \tableofcontents
 \newpage
 
 \section{Pendahuluan}
-MediChart EMR v2 merupakan pengembangan lanjutan sistem rekam medis berbasis web single-page.
-Fokus utama versi ini mencakup Role-Based Access Control (RBAC), Diagnostic Reports,
-dan dokumentasi teknis yang komprehensif.
+MediChart EMR v2 merupakan pengembangan lanjutan dari sistem rekam medis berbasis web single-page. Fokus utama pengembangan adalah menambah kontrol akses berbasis peran (RBAC), memperkaya data klinis dengan Diagnostic Reports, serta menyiapkan dokumentasi teknis yang lengkap untuk kebutuhan akademik.
+
+Dalam konteks tugas mata kuliah, proyek ini tidak hanya menekankan implementasi antarmuka, tetapi juga keterlacakan desain dari kebutuhan hingga artefak UML/DFD.
 
 \section{Deskripsi Sistem}
-Sistem berjalan sepenuhnya pada browser dengan penyimpanan data menggunakan localStorage
-dan sessionStorage. Tidak ada backend server pada implementasi ini.
+Sistem berjalan sepenuhnya di browser dengan pendekatan client-side only. Data klinis dan administratif disimpan di localStorage, sedangkan sesi login disimpan di sessionStorage. Tidak ada backend server dalam implementasi saat ini.
+
+Peran pengguna yang didukung:
+\begin{itemize}[leftmargin=1.2cm]
+  \item Dokter: akses penuh ke fitur klinis
+  \item Perawat: akses melihat data klinis terbatas dan input vital signs
+  \item Admin: manajemen akun pengguna dan data pasien
+\end{itemize}
+
+Fitur utama sistem:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Login/logout dan manajemen sesi
+  \item Role-Based Access Control (RBAC)
+  \item Manajemen pasien dan encounter
+  \item SOAP notes dan problem list
+  \item Diagnostic Reports (Lab dan Radiologi)
+  \item Administrasi akun pengguna
+\end{enumerate}
 
 \section{Arsitektur Sistem}
-Arsitektur dibagi menjadi lapisan presentasi, logika bisnis, data, dan keamanan.
-Ringkasan diagram tersedia pada berkas:
-
+Arsitektur MediChart EMR v2 menggunakan pola SPA monolitik:
 \begin{itemize}[leftmargin=1.2cm]
-  \item docs/component-diagram.puml
-  \item docs/package-diagram.puml
-  \item docs/package-diagram-detailed.puml
+  \item Layer presentasi: login page, app shell, panel pasien, panel diagnostik, panel admin
+  \item Layer logika bisnis: Auth\_Module, Patient\_Module, Clinical\_Module, DiagReport\_Module, Admin\_Module
+  \item Layer data: localStorage dan sessionStorage
+\end{itemize}
+
+Referensi diagram arsitektur:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{docs/component-diagram.puml}
+  \item \texttt{docs/package-diagram.puml} (simple)
+  \item \texttt{docs/package-diagram-detailed.puml} (detailed)
 \end{itemize}
 
 \section{Desain Antarmuka}
-Antarmuka terdiri dari halaman login, app shell, panel pasien, panel laporan diagnostik,
-dan panel administrasi sesuai hak akses peran.
+Desain antarmuka disusun agar alur pengguna jelas berdasarkan peran.
+
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Pengguna login pada halaman awal
+  \item Sistem menampilkan menu sesuai hak akses
+  \item Pengguna mengakses modul pasien/klinis/diagnostik/admin sesuai peran
+\end{enumerate}
+
+Komponen antarmuka inti:
+\begin{itemize}[leftmargin=1.2cm]
+  \item LoginPage
+  \item AppShell
+  \item PatientListPanel
+  \item PatientDetailPanel
+  \item DiagReportPanel
+  \item AdminPanel
+\end{itemize}
+
+Responsivitas didukung agar tata letak tetap dapat digunakan pada layar di bawah 820px.
 
 \section{Desain Data}
-Entitas utama mencakup User, Patient, Encounter, ClinicalNote, Problem,
-dan DiagnosticReport.
+Entitas utama sistem:
+\begin{itemize}[leftmargin=1.2cm]
+  \item User
+  \item Patient
+  \item Encounter
+  \item ClinicalNote
+  \item Problem
+  \item DiagnosticReport
+\end{itemize}
+
+Relasi data memastikan bahwa encounter, problem, dan diagnostic report terhubung ke pasien. Diagnostic report juga dapat dikaitkan langsung ke encounter untuk mempertahankan konteks klinis pemeriksaan.
+
+Referensi model relasi:
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{docs/class-diagram.puml}
+\end{itemize}
 
 \section{Desain Keamanan}
-Keamanan sistem mencakup autentikasi, otorisasi berbasis role, validasi form,
-dan pembatasan akses komponen UI sesuai peran.
+Aspek keamanan utama:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Autentikasi username/password
+  \item Otorisasi RBAC tiga peran
+  \item Pembatasan komponen UI sesuai role
+  \item Penolakan aksi di luar hak akses
+  \item Manajemen sesi aktif melalui sessionStorage
+\end{enumerate}
 
-\section{Perbandingan Fitur v0 dan v2}
+Dengan pendekatan ini, risiko akses tidak sah pada fitur klinis dapat ditekan pada level alur aplikasi.
+
+\section{Diagram UML/DFD}
+Dokumentasi diagram yang disediakan:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Use Case Diagram (\texttt{docs/use-case-diagram.puml})
+  \item Class Diagram (\texttt{docs/class-diagram.puml})
+  \item Sequence Diagram (\texttt{docs/sequence-diagram.puml})
+  \item Component Diagram (\texttt{docs/component-diagram.puml})
+  \item Package Diagram Simple (\texttt{docs/package-diagram.puml})
+  \item Package Diagram Detailed (\texttt{docs/package-diagram-detailed.puml})
+  \item DFD Level 0 (\texttt{docs/dfd-level0.puml})
+  \item DFD Level 1 (\texttt{docs/dfd-level1.puml})
+\end{enumerate}
+
+Lampiran source PlantUML lengkap tersedia pada README untuk kebutuhan copy-paste ke laporan formal.
+
+\section{Perbandingan v0 dan v2}
 \begin{longtable}{|p{4cm}|p{4.5cm}|p{5.5cm}|}
 \hline
 \textbf{Aspek} & \textbf{MediChart v0} & \textbf{MediChart v2} \\
@@ -78,24 +161,35 @@ Dokumentasi & Diagram dasar & UML/DFD diperbarui + laporan formal \\
 \hline
 \end{longtable}
 
-\section{Lampiran Source PlantUML}
-Contoh lampiran source PlantUML (lengkap ada di README):
+\section{Validasi dan Pengujian}
+Validasi dilakukan melalui:
+\begin{enumerate}[leftmargin=1.2cm]
+  \item Pengecekan sintaks JavaScript
+  \item Verifikasi keberadaan artefak dokumentasi
+  \item Validasi marker PlantUML
+  \item Smoke test alur utama login, navigasi, dan modul diagnostik
+\end{enumerate}
 
-\begin{lstlisting}[style=pumlstyle]
-@startuml
-top to bottom direction
-rectangle "UI_Layer" as UI
-rectangle "Core_Domain" as CORE
-rectangle "Security_Auth" as SEC
-rectangle "HL7_Connector" as HL7
-UI -down-> CORE
-SEC -right-> CORE
-CORE -right-> HL7
-@enduml
-\end{lstlisting}
+Hasil umum menunjukkan konsistensi antara implementasi, spesifikasi, dan dokumentasi akhir.
 
 \section{Kesimpulan}
-MediChart EMR v2 berhasil memperluas fungsi klinis, meningkatkan kontrol akses,
-dan menyediakan dokumentasi siap presentasi maupun laporan formal.
+MediChart EMR v2 berhasil memperluas fungsi sistem dari prototipe dasar menjadi simulasi EMR yang lebih lengkap untuk kebutuhan akademik. Penambahan RBAC dan Diagnostic Reports meningkatkan kualitas pemodelan proses klinis, sementara paket dokumentasi formal (Markdown, LaTeX, ODT/Word-ready, dan lampiran PlantUML) memperkuat kesiapan pengumpulan tugas.
+
+\section*{Lampiran}
+\addcontentsline{toc}{section}{Lampiran}
+
+\subsection*{A. Daftar Dokumen Pendukung}
+\addcontentsline{toc}{subsection}{A. Daftar Dokumen Pendukung}
+\begin{itemize}[leftmargin=1.2cm]
+  \item \texttt{docs/laporan.md}
+  \item \texttt{docs/laporan.tex}
+  \item \texttt{docs/template-laporan-odt.md}
+  \item \texttt{docs/panduan-tim.md}
+  \item \texttt{docs/validasi-dan-uji.md}
+\end{itemize}
+
+\subsection*{B. Catatan Pengisian Sebelum Submit}
+\addcontentsline{toc}{subsection}{B. Catatan Pengisian Sebelum Submit}
+Lengkapi identitas kelompok pada bagian cover dan sesuaikan format akhir mengikuti ketentuan kampus.
 
 \end{document}

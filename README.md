@@ -82,6 +82,7 @@ Paket dokumentasi ditulis dengan gaya laporan terstruktur agar mudah dipindahkan
 3. Bukti validasi dan pengujian: [docs/validasi-dan-uji.md](docs/validasi-dan-uji.md)
 4. Template LaTeX: [docs/laporan.tex](docs/laporan.tex)
 5. Template ODT/Word-ready: [docs/template-laporan-odt.md](docs/template-laporan-odt.md)
+6. Makalah proyek deskriptif: [docs/makalah.md](docs/makalah.md)
 
 ## Lampiran Source PlantUML
 
