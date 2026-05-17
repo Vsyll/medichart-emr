@@ -1,0 +1,82 @@
+% LaTeX makalah untuk MediChart EMR v2
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[indonesian]{babel}
+\usepackage{graphicx}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{geometry}
+\geometry{margin=1in}
+
+\title{MediChart EMR v2: Desain Sistem Rekam Medis Elektronik untuk Konteks Edukasional}
+\author{Kelompok: [Isi Nama Kelompok] \\ Anggota: [Isi 5--7 Nama]}
+\date{[Tanggal]}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+MediChart EMR v2 adalah prototipe sistem rekam medis elektronik berbasis single-page application (SPA) yang dikembangkan untuk keperluan pendidikan. Makalah ini menjelaskan tujuan, arsitektur, model data, mekanisme kontrol akses berbasis peran (RBAC), implementasi modul diagnostik, dan hasil validasi fungsional. Dokumen ini disusun agar siap dikirimkan kepada dosen sebagai naskah makalah dan digunakan dalam presentasi kelompok.
+\end{abstract}
+
+\section{Pendahuluan}
+Perancangan sistem informasi kesehatan menuntut perhatian pada integritas data klinis, kontrol akses, dan keterlacakan keputusan klinis. MediChart EMR v2 dikembangkan sebagai proyek kelompok yang menekankan pemodelan fitur-fitur inti EMR dalam lingkungan yang mudah dijalankan: browser tanpa backend.
+
+\section{Konteks dan Tujuan}
+Sistem ditujukan sebagai bahan pembelajaran: memperkenalkan konsep autentikasi, otorisasi, manajemen data pasien, catatan klinis (SOAP), dan pencatatan hasil diagnostik (lab/imaging). Tujuan utamanya adalah membangun sebuah prototipe yang dapat didemokan dan didokumentasikan secara akademik.
+
+\section{Arsitektur Sistem}
+Arsitektur MediChart v2 adalah SPA monolitik. Komponen utama meliputi:
+\begin{itemize}
+  \item \textbf{Auth\_Module}: login, manajemen sesi, fungsi `canAccess()` untuk RBAC.
+  \item \textbf{Patient\_Module}: CRUD pasien dan pencarian.
+  \item \textbf{Clinical\_Module}: SOAP notes, encounter.
+  \item \textbf{DiagReport\_Module}: input lab/imaging, status, filter.
+  \item \textbf{Admin\_Module}: manajemen akun pengguna.
+\end{itemize}
+
+Penyimpanan menggunakan `localStorage` untuk data dan `sessionStorage` untuk sesi.
+
+\section{Model Data}
+Skema entitas utama dijelaskan singkat:
+\begin{itemize}
+  \item \textbf{User}: userId, username, passwordHash, name, role, isActive, lastLoginAt.
+  \item \textbf{Patient}: patientId, name, age, gender, address, phone, createdAt.
+  \item \textbf{Encounter}: encounterId, patientId, doctorId, date, status.
+  \item \textbf{ClinicalNote}: noteId, encounterId, subjective, objective, assessment, plan.
+  \item \textbf{DiagnosticReport}: reportId, patientId, encounterId, type, date, status, interpretation, labData/imagingData.
+\end{itemize}
+
+Relasi utama: DiagnosticReport terkait ke Patient dan bersifat opsional terkait ke Encounter.
+
+\section{Keamanan dan Kebijakan Akses}
+RBAC mendefinisikan tiga peran utama dan hak akses masing-masing. Implementasi menekankan prinsip "least privilege" dalam konteks UI: elemen fungsi yang tidak diizinkan tidak ditampilkan.
+
+\section{Implementasi}
+Implementasi menggunakan vanilla JavaScript dengan pola pemisahan modul fungsional di dalam satu file `medichart.html`. Fitur penting:
+\begin{itemize}
+  \item Generator ID unik untuk entitas.
+  \item Fungsi penyimpanan abstraksi (`store.get/set`) untuk localStorage.
+  \item Validasi input untuk DiagnosticReport (field wajib, format tanggal).
+  \item Transisi status laporan (`pending` → `final` → `amended`) dan aturan yang mencegah kembali ke `pending`.
+\end{itemize}
+
+\section{Validasi dan Pengujian}
+Validasi dilakukan melalui skenario manual terstruktur (smoke tests) serta verifikasi konsistensi data di localStorage. Pengujian fokus pada:
+\begin{itemize}
+  \item Alur login/logout dan pengecekan RBAC.
+  \item Pembuatan laporan diagnostik, perubahan status, dan penampilan nilai di luar referensi.
+  \item Konsistensi jumlah item yang ditampilkan dengan isi penyimpanan.
+\end{itemize}
+
+\section{Pembahasan}
+Sebagai prototipe edukasional, MediChart v2 berhasil menyajikan mekanisme kunci EMR dalam implementasi yang ringkas. Keterbatasan utama berkaitan dengan keamanan dan skalabilitas; untuk konteks produksi diperlukan backend, autentikasi yang aman, enkripsi, dan audit trail.
+
+\section{Kesimpulan}
+MediChart EMR v2 menyediakan bahan ajar yang komprehensif untuk memahami desain dan implementasi fitur EMR inti. Naskah ini siap diajukan ke dosen bersama lampiran diagram PlantUML dan file sumber LaTeX untuk presentasi.
+
+\section*{Lampiran}
+Instruksi singkat: untuk menyertakan diagram PlantUML pada dokumen ini, render file `.puml` ke PNG/SVG dan gunakan `\includegraphics{}` pada lokasi yang diinginkan.
+
+\end{document}

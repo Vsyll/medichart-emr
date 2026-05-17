@@ -1,160 +1,131 @@
-# Makalah Proyek MediChart EMR v2
+% Makalah Akademik: MediChart EMR v2
 
-Dokumen ini disusun agar konsisten dengan dua acuan utama:
+# Abstrak
 
-1. Struktur laporan formal pada `docs/laporan.tex`
-2. Urutan bab template ODT/Word pada `docs/template-laporan-odt.md`
+MediChart EMR v2 adalah rancangan sistem rekam medis elektronik berbasis web single-page yang dirancang untuk memenuhi kebutuhan dokumentasi klinis sederhana pada lingkungan pendidikan. Makalah ini menjelaskan tujuan, ruang lingkup, desain arsitektur, model data, mekanisme keamanan berbasis peran (RBAC), serta implementasi teknis dan validasi fungsional. Dokumen ditujukan sebagai naskah akademik kelompok untuk penilaian dan presentasi di perkuliahan.
 
-## Cover
+# Kata Kunci
 
-- Judul: Laporan Desain Sistem MediChart EMR v2
-- Mata Kuliah: Konsep Teknologi Informasi
-- Kelompok: [Isi Nama Kelompok]
-- Anggota: [Isi 5-7 Nama]
-- Dosen: [Isi Nama Dosen]
-- Tanggal: [Isi Tanggal]
+Electronic Medical Record, SPA, RBAC, Diagnostic Report, desain sistem, localStorage
 
-## Daftar Isi
+# 1 Pendahuluan
 
-Gunakan fitur daftar isi otomatis jika dokumen ini dipindahkan ke ODT/Word/PDF.
+Perkembangan sistem rekam medis elektronik (EMR) memerlukan keseimbangan antara fungsionalitas klinis dan kemudahan implementasi. Dalam konteks pendidikan, proyek ini bertujuan menghadirkan sebuah prototipe EMR yang dapat dipahami, dimodifikasi, dan dipresentasikan oleh kelompok mahasiswa. MediChart EMR v2 berfokus pada satu versi final (v2) yang mengintegrasikan autentikasi berbasis peran dan modul pencatatan hasil diagnostik (laboratorium dan radiologi).
 
-## 1. Pendahuluan
+Tujuan makalah:
 
-MediChart EMR v2 merupakan pengembangan lanjutan dari sistem rekam medis berbasis web single-page. Fokus utama pengembangan adalah menambah kontrol akses berbasis peran (RBAC), memperkaya data klinis dengan Diagnostic Reports, serta menyiapkan dokumentasi teknis yang lengkap untuk kebutuhan akademik.
+- Menjelaskan desain arsitektur dan komponen sistem MediChart EMR v2.
+- Menyajikan model data dan relasi antar-entitas yang digunakan.
+- Menganalisis mekanisme otorisasi berbasis peran (RBAC) dan implikasinya terhadap UI/UX.
+- Menyampaikan aspek implementasi teknis (client-side SPA) dan metode validasi yang dilakukan.
 
-Dalam konteks tugas mata kuliah, proyek ini tidak hanya menekankan implementasi antarmuka, tetapi juga keterlacakan desain dari kebutuhan hingga artefak UML/DFD.
+# 2 Konteks dan Ruang Lingkup
 
-## 2. Deskripsi Sistem
+Meskipun terinspirasi oleh sistem open-source seperti OpenEMR/OpenMRS, MediChart EMR v2 tidak dirancang sebagai pengganti sistem produksi. Sistem ini bersifat edukasional: ringan, berdiri sendiri, dan berjalan sepenuhnya di browser tanpa backend. Ruang lingkup meliputi:
 
-Sistem berjalan sepenuhnya di browser dengan pendekatan client-side only. Data klinis dan administratif disimpan di localStorage, sedangkan sesi login disimpan di sessionStorage. Tidak ada backend server dalam implementasi saat ini.
+- Autentikasi dan manajemen sesi.
+- Kontrol akses berbasis peran untuk tiga peran: `Dokter`, `Perawat`, `Admin`.
+- Manajemen data pasien sederhana (demografi, encounter).
+- Catatan klinis berbasis SOAP dan daftar masalah (Problem List).
+- Modul Diagnostic Reports untuk menyimpan hasil laboratorium dan laporan imaging.
 
-Peran pengguna yang didukung:
+# 3 Arsitektur Sistem
 
-- Dokter: akses penuh ke fitur klinis
-- Perawat: akses melihat data klinis terbatas dan input vital signs
-- Admin: manajemen akun pengguna dan data pasien
+Arsitektur utama adalah aplikasi single-page (SPA) monolitik yang diimplementasikan dalam satu berkas `medichart.html`. Komponen utama:
 
-Fitur utama sistem:
+- Presentation Layer: halaman login, app shell, panel pasien, panel diagnostik, panel admin.
+- Business Logic Layer: modul `Auth_Module`, `Patient_Module`, `Clinical_Module`, `DiagReport_Module`, `Admin_Module`.
+- Data Layer: penyimpanan lokal menggunakan `localStorage` untuk data permanen dan `sessionStorage` untuk sesi.
 
-1. Login/logout dan manajemen sesi
-2. Role-Based Access Control (RBAC)
-3. Manajemen pasien dan encounter
-4. SOAP notes dan problem list
-5. Diagnostic Reports (Lab dan Radiologi)
-6. Administrasi akun pengguna
+Keuntungan arsitektur ini:
 
-## 3. Arsitektur Sistem
+- Sederhana untuk dikembangkan dan di-deploy (cukup membuka `medichart.html`).
+- Mudah diajarkan dan dimodifikasi dalam konteks tugas kelompok.
 
-Arsitektur MediChart EMR v2 menggunakan pola SPA monolitik:
+Keterbatasan:
 
-- Layer presentasi: login page, app shell, panel pasien, panel diagnostik, panel admin
-- Layer logika bisnis: Auth_Module, Patient_Module, Clinical_Module, DiagReport_Module, Admin_Module
-- Layer data: localStorage dan sessionStorage
+- Tidak cocok untuk lingkungan produksi karena tidak ada enkripsi persisten, backup terpusat, atau manajemen multi-user nyata.
 
-Referensi diagram arsitektur:
+# 4 Model Data dan Relasi
 
-- `docs/component-diagram.puml`
-- `docs/package-diagram.puml` (simple)
-- `docs/package-diagram-detailed.puml` (detailed)
+Entitas utama yang digunakan pada MediChart EMR v2 adalah `User`, `Patient`, `Encounter`, `ClinicalNote`, `Problem`, dan `DiagnosticReport`. Setiap entitas direpresentasikan sebagai objek JSON dan disimpan dalam koleksi di `localStorage`.
 
-## 4. Desain Antarmuka
+Contoh ringkasan atribut `DiagnosticReport`:
 
-Desain antarmuka disusun agar alur pengguna jelas berdasarkan peran.
+- `reportId`, `patientId`, `encounterId` (nullable)
+- `type` ∈ {`lab`, `imaging`}
+- `date`, `status` ∈ {`pending`, `final`, `amended`}
+- `interpretation`, `labData` (parameter hasil) atau `imagingData` (modality, findings, impression)
 
-1. Pengguna login pada halaman awal
-2. Sistem menampilkan menu sesuai hak akses
-3. Pengguna mengakses modul pasien/klinis/diagnostik/admin sesuai peran
+Relasi kunci:
 
-Komponen antarmuka inti:
+- `DiagnosticReport` terkait ke `Patient` dan dapat terkait ke `Encounter` untuk menjaga konteks klinis.
 
-- LoginPage
-- AppShell
-- PatientListPanel
-- PatientDetailPanel
-- DiagReportPanel
-- AdminPanel
+# 5 Keamanan dan RBAC
 
-Responsivitas didukung agar tata letak tetap dapat digunakan pada layar di bawah 820px.
+Mekanisme kontrol akses dirancang sederhana namun eksplisit. RBAC mengatur apa yang dapat dilihat atau dilakukan oleh masing-masing peran:
 
-## 5. Desain Data
+- Dokter: akses penuh terhadap fitur klinis (mencatat, mengubah, melihat semua data klinis).
+- Perawat: akses baca ke data klinis dan kemampuan mengisi bagian Objective (tanda vital).
+- Admin: kemampuan manajemen akun dan data pasien; tidak memiliki akses klinis untuk mencatat diagnosis.
 
-Entitas utama sistem:
+Implementasi RBAC:
 
-- User
-- Patient
-- Encounter
-- ClinicalNote
-- Problem
-- DiagnosticReport
+- Fungsi `canAccess(feature)` mengevaluasi hak berdasarkan role yang tersimpan di `sessionStorage`.
+- UI disesuaikan sehingga elemen (tombol, form) yang tidak berwenang tidak ditampilkan atau di-disable.
 
-Relasi data memastikan bahwa encounter, problem, dan diagnostic report terhubung ke pasien. Diagnostic report juga dapat dikaitkan langsung ke encounter untuk mempertahankan konteks klinis pemeriksaan.
+Catatan keamanan: karena sistem bersifat edukasional dan data tersimpan di localStorage, tidak ada jaminan kerahasiaan atau integritas terhadap ancaman eksternal.
 
-Referensi model relasi:
+# 6 Alur Utama dan Use Cases
 
-- `docs/class-diagram.puml`
+Use case sentral yang dijelaskan dan diimplementasikan:
 
-## 6. Desain Keamanan
+- Login dan otorisasi sesi.
+- Manajemen daftar pasien: tambah, edit, lihat.
+- Rekaman encounter dan SOAP notes.
+- Pembuatan dan peninjauan Diagnostic Reports: input lab, input imaging, perubahan status (pending→final→amended).
 
-Aspek keamanan utama:
+Untuk setiap use case, diagram urutan (sequence) dan use-case tersedia di `docs/` sebagai PlantUML.
 
-1. Autentikasi username/password
-2. Otorisasi RBAC tiga peran
-3. Pembatasan komponen UI sesuai role
-4. Penolakan aksi di luar hak akses
-5. Manajemen sesi aktif melalui sessionStorage
+# 7 Implementasi Teknis
 
-Dengan pendekatan ini, risiko akses tidak sah pada fitur klinis dapat ditekan pada level alur aplikasi.
+Rincian implementasi teknis:
 
-## 7. Diagram UML/DFD
+- Platform: HTML5, CSS, JavaScript (ES6+).
+- Struktur: satu file `medichart.html` yang berisi struktur DOM, style, dan modul-modul JS terorganisir secara fungsional.
+- Penyimpanan: `localStorage` untuk data, deserialisasi/serialisasi JSON pada setiap operasi tulis/baca.
+- ID entitas: generator ID sederhana (UUID-like) untuk `userId`, `patientId`, `reportId`.
+- Validasi: fungsi `validateReport()` memastikan field wajib terisi dan format tanggal valid.
 
-Dokumentasi diagram yang disediakan:
+# 8 Validasi dan Pengujian
 
-1. Use Case Diagram (`docs/use-case-diagram.puml`)
-2. Class Diagram (`docs/class-diagram.puml`)
-3. Sequence Diagram (`docs/sequence-diagram.puml`)
-4. Component Diagram (`docs/component-diagram.puml`)
-5. Package Diagram Simple (`docs/package-diagram.puml`)
-6. Package Diagram Detailed (`docs/package-diagram-detailed.puml`)
-7. DFD Level 0 (`docs/dfd-level0.puml`)
-8. DFD Level 1 (`docs/dfd-level1.puml`)
+Karena lingkungan tugas bersifat lokal, validasi difokuskan pada:
 
-Lampiran source PlantUML lengkap tersedia pada README untuk kebutuhan copy-paste ke laporan formal.
+- Smoke tests manual: login dengan akun demo, navigasi fitur utama, pembuatan laporan diagnostik, perubahan status, dan penghapusan pasien.
+- Pemeriksaan konsistensi data: memastikan jumlah item yang ditampilkan sesuai dengan yang tersimpan di `localStorage`.
+- Validasi field wajib pada form input diagnostik dan tindakan UI untuk nilai di luar rentang referensi (flagging).
 
-## 8. Perbandingan v0 dan v2
+# 9 Pembahasan dan Keterbatasan
 
-| Aspek | MediChart v0 | MediChart v2 |
-|---|---|---|
-| Autentikasi | Belum ada RBAC | Login, sesi, dan role-based access |
-| Peran pengguna | Satu aktor dokter | Dokter, Perawat, Admin |
-| Data klinis | SOAP dan Problem List dasar | SOAP, Problem List, Encounter, Diagnostic Reports |
-| Manajemen pengguna | Tidak ada | Tersedia untuk Admin |
-| Dokumentasi | Diagram dasar | UML/DFD diperbarui + laporan formal |
+Pembahasan menyoroti trade-off desain:
 
-## 9. Validasi dan Pengujian
+- Kelebihan: cepat dikembangkan, mudah dipelajari, cocok untuk demonstrasi konsep arsitektur EMR dan RBAC.
+- Kekurangan: tidak ada autentikasi aman, tidak ada audit trail terpusat, tidak cocok untuk lingkungan klinis nyata.
 
-Validasi dilakukan melalui:
+Untuk perbaikan selanjutnya, disarankan:
 
-1. Pengecekan sintaks JavaScript
-2. Verifikasi keberadaan artefak dokumentasi
-3. Validasi marker PlantUML
-4. Smoke test alur utama login, navigasi, dan modul diagnostik
+- Menambahkan backend ringan (REST API) untuk otentikasi dan penyimpanan terpusat.
+- Mengenkripsi data sensitif dan menambahkan audit trail.
 
-Hasil umum menunjukkan konsistensi antara implementasi, spesifikasi, dan dokumentasi akhir.
+# 10 Kesimpulan
 
-## 10. Kesimpulan
+MediChart EMR v2 merepresentasikan sebuah prototipe edukasional yang menekankan desain sistem, kontrol akses, dan pencatatan diagnostik. Makalah ini menyajikan desain, model data, keputusan arsitektural, dan hasil validasi yang relevan untuk presentasi akademik.
 
-MediChart EMR v2 berhasil memperluas fungsi sistem dari prototipe dasar menjadi simulasi EMR yang lebih lengkap untuk kebutuhan akademik. Penambahan RBAC dan Diagnostic Reports meningkatkan kualitas pemodelan proses klinis, sementara paket dokumentasi formal (Markdown, LaTeX, ODT/Word-ready, dan lampiran PlantUML) memperkuat kesiapan pengumpulan tugas.
+# Referensi
 
-## Lampiran
+- Dokumentasi internal proyek (PlantUML sources dan README di `docs/`).
+- OpenEMR / OpenMRS — referensi konsep EMR open-source (untuk studi perbandingan konseptual).
 
-### A. Daftar Dokumen Pendukung
+# Lampiran
 
-- `docs/laporan.md`
-- `docs/laporan.tex`
-- `docs/template-laporan-odt.md`
-- `docs/panduan-tim.md`
-- `docs/validasi-dan-uji.md`
-
-### B. Catatan Pengisian Sebelum Submit
-
-Lengkapi identitas kelompok pada bagian cover dan sesuaikan format akhir mengikuti ketentuan kampus.
+- Petunjuk penggunaan singkat, daftar akun demo, dan instruksi untuk merender PlantUML ke gambar tersedia di `README.md` dan `docs/panduan-tim.md`.
