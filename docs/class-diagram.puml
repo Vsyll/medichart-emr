@@ -24,7 +24,14 @@ class Doctor {
 class Nurse {
   +nurseId: string
   +department: string
-  +inputVitals()
+  +inputObjective()
+}
+
+class Admin {
+  +adminId: string
+  +addUser()
+  +deactivateUser()
+  +manageUsers()
 }
 
 class Patient {
@@ -33,9 +40,6 @@ class Patient {
   +age: int
   +gender: string
   +address: string
-  +phone: string
-  +bloodType: string
-  +allergies: string
   +getDemographics()
   +createPatient()
   +updatePatient()
@@ -44,12 +48,13 @@ class Patient {
 class Encounter {
   +encounterId: string
   +patientId: string
-  +doctorId: string
-  +date: datetime
+  +doctorName: string
   +chiefComplaint: string
-  +status: string
-  +startEncounter()
-  +closeEncounter()
+  +diagnosis: string
+  +timestamp: datetime
+  +updatedAt: datetime
+  +addEncounter()
+  +updateEncounter()
 }
 
 class ClinicalNote {
@@ -59,7 +64,6 @@ class ClinicalNote {
   +objective: string
   +assessment: string
   +plan: string
-  +updatedAt: string
   +saveNote()
   +updateNote()
 }
@@ -69,23 +73,9 @@ class Problem {
   +patientId: string
   +encounterId: string
   +diagnosisName: string
-  +icdCode: string
   +status: string
-  +createdAt: string
   +addProblem()
   +updateStatus()
-}
-
-class VitalSign {
-  +vitalId: string
-  +encounterId: string
-  +bloodPressure: string
-  +heartRate: int
-  +temperature: float
-  +respiratoryRate: int
-  +recordedAt: string
-  +saveVitals()
-  +updateVitals()
 }
 
 class DiagnosticReport {
@@ -99,23 +89,40 @@ class DiagnosticReport {
   +createdAt: string
   +updatedAt: string
   +addReport()
+  +updateReport()
   +updateStatus()
+}
+
+class LabData {
+  +testName: string
+  +paramName: string
+  +value: string
+  +unit: string
+  +referenceRange: string
+}
+
+class ImagingData {
+  +modality: string
+  +bodyPart: string
+  +findings: string
+  +impression: string
 }
 
 User <|-- Doctor
 User <|-- Nurse
+User <|-- Admin
 
 Patient "1" -- "0..*" Encounter : memiliki
 Doctor "1" -- "0..*" Encounter : menangani
 
 Encounter "1" -- "0..1" ClinicalNote : menghasilkan
-Encounter "1" -- "0..1" VitalSign : memiliki
 Encounter "1" -- "0..*" Problem : mencatat
-Encounter "1" -- "0..*" DiagnosticReport : terkait
-
 Patient "1" -- "0..*" Problem : memiliki
-Patient "1" -- "0..*" DiagnosticReport : memiliki
 
-Nurse "1" -- "0..*" VitalSign : mencatat
+Patient "1" -- "0..*" DiagnosticReport : memiliki
+Encounter "0..1" -- "0..*" DiagnosticReport : terkait
+
+DiagnosticReport "1" -- "0..1" LabData : data lab
+DiagnosticReport "1" -- "0..1" ImagingData : data radiologi
 
 @enduml
